@@ -63,38 +63,80 @@
                         Si no hay un periodo activo, se muestra un mensaje genérico.
                     =============================================== --}}
 
+                    {{-- ===============================================
+                        EVALUACIÓN A RECLAMAR
+                        El controlador puede mandar uno o dos periodos:
+                        - $periodoActivo:   siempre llega (el abierto hoy)
+                        - $periodoAnterior: opcional, la evaluación anterior
+                            dentro del mismo ciclo
+                        Si solo viene el activo, mostramos un input readonly
+                        + un hidden con su id. Si viene el anterior también,
+                        renderizamos un <select> para que el estudiante elija
+                        cuál de las dos evaluaciones reclamar.
+                    =============================================== --}}
                     <div class="col-span-2 mt-2">
                         <label class="block text-xs font-bold uppercase mb-1 tracking-wider" style="color: #5D0A28;">
-                            Periodo de Evaluación Activo
+                            Evaluación a Reclamar
                         </label>
 
-                        <input type="text"
-                            value="{{ $periodoActivo->evaluacion ?? 'Evaluación Activa' }}"
-                            class="w-full p-3 border-2 rounded-lg outline-none text-sm font-bold shadow-sm"
-                            style="background-color: #fff5f7; border-color: #5D0A28; color: #5D0A28;"
-                            readonly>
+                        {{-- Caso 1: solo hay periodo activo → input bloqueado + hidden con su id --}}
+                        @if(!isset($periodoAnterior) || !$periodoAnterior)
+                            <input type="text"
+                                value="{{ $periodoActivo->evaluacion ?? 'Evaluación Activa' }}"
+                                class="w-full p-3 border-2 rounded-lg outline-none text-sm font-bold shadow-sm"
+                                style="background-color: #fff5f7; border-color: #5D0A28; color: #5D0A28;"
+                                readonly>
+                            <input type="hidden" name="periodo_id" value="{{ $periodoActivo->id }}">
 
-                    {{-- ===============================================
-                        FECHAS DEL PERIODO ACTIVO
-                        Si hay un periodo activo, se muestran sus fechas de inicio y fin debajo del nombre de la evaluación.
-                    =============================================== --}}
+                        @else
+                            {{-- Caso 2: existe el periodo anterior → select con dos opciones.
+                                Los atributos data-inicio / data-fin sirven al JS al final
+                                del archivo para actualizar el texto "Periodo de recepción"
+                                cada vez que cambia la selección. --}}
+                            <select name="periodo_id" id="select_periodo" required
+                                class="w-full p-3 border-2 rounded-lg outline-none text-sm font-bold shadow-sm cursor-pointer"
+                                style="background-color: #fff5f7; border-color: #5D0A28; color: #5D0A28;">
+                                <option value="{{ $periodoActivo->id }}"
+                                    data-inicio="{{ $periodoActivo->fecha_inicio }}"
+                                    data-fin="{{ $periodoActivo->fecha_fin }}">
+                                    {{ $periodoActivo->evaluacion }} (Activa)
+                                </option>
+                                <option value="{{ $periodoAnterior->id }}"
+                                    data-inicio="{{ $periodoAnterior->fecha_inicio }}"
+                                    data-fin="{{ $periodoAnterior->fecha_fin }}">
+                                    {{ $periodoAnterior->evaluacion }} (Excepción — evaluación anterior)
+                                </option>
+                            </select>
+                        @endif
+
+                        {{-- ===============================================
+                            FECHAS DEL PERIODO ACTIVO
+                            Si hay un periodo activo, se muestran sus fechas debajo.
+                            Con el select, se actualizan en tiempo real al cambiar de evaluación.
+                        =============================================== --}}
 
                         @if(isset($periodoActivo->fecha_inicio) && isset($periodoActivo->fecha_fin))
                             <p class="text-xs text-gray-500 mt-1.5 flex items-center gap-1.5">
                                 <i class="fas fa-calendar-alt" style="color: #5D0A28;"></i>
-                                Periodo activo:
-                                <span class="font-bold text-gray-700">
+                                Periodo de recepción de solicitudes:
+                                <span id="periodo_inicio" class="font-bold text-gray-700">
                                     {{ \Carbon\Carbon::parse($periodoActivo->fecha_inicio)->format('d/m/Y') }}
                                 </span>
                                 <span class="text-gray-400">—</span>
-                                <span class="font-bold text-gray-700">
+                                <span id="periodo_fin" class="font-bold text-gray-700">
                                     {{ \Carbon\Carbon::parse($periodoActivo->fecha_fin)->format('d/m/Y') }}
                                 </span>
                             </p>
                         @endif
 
-                        @if(isset($periodoActivo->id))
-                            <input type="hidden" name="periodo_id" value="{{ $periodoActivo->id }}">
+                        @if(isset($periodoAnterior) && $periodoAnterior)
+                            <p class="text-xs text-amber-700 mt-1.5 flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded p-2">
+                                <i class="fas fa-info-circle text-amber-500 mt-0.5"></i>
+                                <span>
+                                    <span class="font-bold">Excepción disponible:</span>
+                                    También puedes reclamar la nota de la evaluación inmediatamente anterior a la actual.
+                                </span>
+                            </p>
                         @endif
                     </div>
                 </div>
@@ -152,17 +194,18 @@
                     <input type="hidden" name="docente_id" id="input_docente_id">
                 </div>
 
-                {{-- ── NOTA ── --}}
+                {{-- ── NOTA A RECLAMAR ── --}}
                 <div id="contenedor_nota" class="col-span-2 p-4 rounded-lg border bg-gray-50 border-gray-200 transition-colors duration-300">
-                    <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Nota Publicada (0.0 a 9.9)</label>
-                    <input type="number" step="0.1" min="0.0" max="9.9"
+                    <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Nota a Reclamar (0.0 a 10)</label>
+                    <p class="text-xs text-gray-500 mb-2 italic">Ingrese la nota que el docente le publicó y que usted considera incorrecta.</p>
+                    <input type="number" step="0.1" min="0.0" max="10"
                         name="nota_actual" id="input_nota"
                         class="w-full p-3 border-2 rounded-lg outline-none bg-white"
                         style="focus-border-color: #5D0A28;"
                         placeholder="Ej: 7.5"
                         required>
                     <p id="error_nota" class="text-red-600 text-sm font-bold mt-2 hidden">
-                        ⚠️ La nota no puede ser mayor a 9.9 ni menor a 0.0. Revise el valor ingresado.
+                        ⚠️ La nota no puede ser mayor a 10 ni menor a 0.0. Revise el valor ingresado.
                     </p>
                 </div>
 
@@ -179,7 +222,7 @@
 
             {{-- ===============================================
                 BOTONES DE ENVÍO
-                El botón de enviar se deshabilita si la nota ingresada es inválida (mayor a 9.9 o menor a 0).
+                El botón de enviar se deshabilita si la nota ingresada es inválida (mayor a 10 o menor a 0).
         =============================================== --}}
 
             <div class="mt-8 flex space-x-4">
@@ -221,6 +264,30 @@
             document.getElementById('input_docente_nombre').value  = docNombre  || '';
             document.getElementById('input_docente_id').value      = docId      || '';
         });
+
+        // Sincronización del bloque "Periodo de recepción" con el select de evaluación.
+        // El select solo existe cuando hay una evaluación anterior disponible
+        // (la "excepción"). Cuando el estudiante cambia entre la activa y la anterior,
+        // se actualizan los <span> de fechas leyendo los atributos data-inicio/data-fin
+        // de la opción seleccionada y se reformatean al formato d/m/Y.
+        var selectPeriodo = document.getElementById('select_periodo');
+        if (selectPeriodo) {
+            selectPeriodo.addEventListener('change', function () {
+                var opcion = this.options[this.selectedIndex];
+                var inicio = opcion.getAttribute('data-inicio');
+                var fin    = opcion.getAttribute('data-fin');
+
+                // Convierte "2026-01-15" → "15/01/2026"
+                function fmt(fechaIso) {
+                    if (!fechaIso) return '';
+                    var partes = fechaIso.substring(0, 10).split('-');
+                    return partes[2] + '/' + partes[1] + '/' + partes[0];
+                }
+
+                document.getElementById('periodo_inicio').textContent = fmt(inicio);
+                document.getElementById('periodo_fin').textContent    = fmt(fin);
+            });
+        }
 
         // Validación de nota en tiempo real
         document.getElementById('input_nota').addEventListener('input', function () {

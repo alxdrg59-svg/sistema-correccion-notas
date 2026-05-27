@@ -124,18 +124,28 @@
                                         'finalizado'            => 'bg-green-100  text-green-700  border-green-200',
                                     ];
                                     $etiquetas = [
-                                        'pendiente_docente'     => 'Pendiente',
-                                        'rechazado_docente'     => 'Rechazada',
-                                        'pendiente_coordinador' => 'Aprobada → Coordinador',
-                                        'rechazado_coordinador' => 'Rech. Coordinador',
-                                        'pendiente_admin'       => 'En Admin',
+                                        'pendiente_docente'     => 'En revisión (Docente)',
+                                        'rechazado_docente'     => 'Rechazada por Docente',
+                                        'pendiente_coordinador' => 'En revisión (Coordinador)',
+                                        'rechazado_coordinador' => 'Rechazada por Coordinador',
+                                        'pendiente_admin'       => 'En revisión (Admin)',
                                         'finalizado'            => 'Finalizada',
+                                    ];
+                                    $iconos = [
+                                        'pendiente_docente'     => 'fa-hourglass-half',
+                                        'rechazado_docente'     => 'fa-times-circle',
+                                        'pendiente_coordinador' => 'fa-hourglass-half',
+                                        'rechazado_coordinador' => 'fa-times-circle',
+                                        'pendiente_admin'       => 'fa-hourglass-half',
+                                        'finalizado'            => 'fa-check-circle',
                                     ];
                                     $estadoKey = $solicitud->estado;
                                     $estilo    = $clases[$estadoKey]    ?? 'bg-gray-100 text-gray-500 border-gray-200';
                                     $etiqueta  = $etiquetas[$estadoKey] ?? $estadoKey;
+                                    $icono     = $iconos[$estadoKey]    ?? 'fa-circle';
                                 @endphp
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border {{ $estilo }}">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap {{ $estilo }}">
+                                    <i class="fas {{ $icono }} text-[10px]"></i>
                                     {{ $etiqueta }}
                                 </span>
                             </td>

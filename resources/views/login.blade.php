@@ -17,7 +17,7 @@
         </div>
 
         <form action="{{ route('login.post') }}" method="POST" class="space-y-6">
-            @csrf
+            @csrf 
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-1 uppercase">Correo Institucional</label>
                 <input type="email" name="correo"

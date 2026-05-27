@@ -63,6 +63,11 @@ Route::post('/estudiante/guardar-solicitud', [SolicitudController::class, 'guard
 Route::get('/estudiante/solicitud/{id}', [SolicitudController::class, 'verDetalle'])
     ->middleware(['auth', 'rol:estudiante']);
 
+// Descarga de la constancia PDF (solo si la solicitud le pertenece y está finalizada).
+// La validación de propiedad y estado se hace dentro del controlador.
+Route::get('/estudiante/solicitud/{id}/pdf', [SolicitudController::class, 'exportarPdf'])
+    ->middleware(['auth', 'rol:estudiante']);
+
 // Ruta para cancelar una solicitud (solo si está en estado pendiente_docente o pendiente_coordinador)
 Route::get('/docente/dashboard', [DocenteController::class, 'index'])
     ->middleware(['auth', 'rol:docente']);
@@ -99,6 +104,21 @@ Route::get('/admin/solicitud/{id}', [AdminController::class, 'verDetalle'])
 
 // Ruta para finalizar la solicitud (solo si el admin la tiene en pendiente_admin)
 Route::post('/admin/solicitud/{id}/finalizar', [AdminController::class, 'finalizar'])
+    ->middleware(['auth', 'rol:admin']);
+
+// Descarga de la constancia PDF (solo si la solicitud está finalizada).
+// El controlador exige estado = 'finalizado' antes de emitir el documento.
+Route::get('/admin/solicitud/{id}/pdf', [AdminController::class, 'exportarPdf'])
+    ->middleware(['auth', 'rol:admin']);
+
+// Gestión de periodos de corrección (admin académico)
+// GET  → lista todos los periodos en una tabla editable
+// POST → recibe el formulario de un periodo (fechas + estado) y guarda los cambios
+// Ambas rutas exigen sesión iniciada y rol=admin a través del middleware "rol".
+Route::get('/admin/periodos', [AdminController::class, 'periodos'])
+    ->middleware(['auth', 'rol:admin']);
+
+Route::post('/admin/periodos/{id}/actualizar', [AdminController::class, 'actualizarPeriodo'])
     ->middleware(['auth', 'rol:admin']);
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

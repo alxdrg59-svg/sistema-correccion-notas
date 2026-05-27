@@ -152,11 +152,12 @@
                                     ];
 
                                     // Texto amigable en lugar del valor crudo del ENUM
+                                    // Distinguimos quién rechazó la solicitud para que el estudiante sepa la etapa
                                     $etiquetas = [
                                         'pendiente_docente'     => 'En revisión (Docente)',
-                                        'rechazado_docente'     => 'Rechazada',
+                                        'rechazado_docente'     => 'Rechazada por Docente',
                                         'pendiente_coordinador' => 'En revisión (Coordinador)',
-                                        'rechazado_coordinador' => 'Rechazada',
+                                        'rechazado_coordinador' => 'Rechazada por Coordinador',
                                         'pendiente_admin'       => 'En revisión (Admin)',
                                         'finalizado'            => 'Aprobada y Finalizada',
                                     ];
@@ -186,15 +187,26 @@
                                 @endif
                             </td>
 
-                            {{-- Enlace a la vista de detalle con el ID de la solicitud --}}
+                            {{-- Acciones: ver detalle siempre; descargar PDF solo si la
+                                 solicitud ya está finalizada (es decir, tiene constancia). --}}
                             <td class="p-4 text-right">
-                                <a href="/estudiante/solicitud/{{ $solicitud->id }}"
-                                    style="color: #5D0A28;"
-                                    onmouseover="this.style.color='#4A0820'"
-                                    onmouseout="this.style.color='#5D0A28'"
-                                    class="hover:underline font-bold text-xs uppercase tracking-widest transition">
-                                    <i class="fas fa-eye mr-1"></i> Ver Detalles
-                                </a>
+                                <div class="inline-flex items-center gap-3 justify-end flex-wrap">
+                                    <a href="/estudiante/solicitud/{{ $solicitud->id }}"
+                                        style="color: #5D0A28;"
+                                        onmouseover="this.style.color='#4A0820'"
+                                        onmouseout="this.style.color='#5D0A28'"
+                                        class="hover:underline font-bold text-xs uppercase tracking-widest transition">
+                                        <i class="fas fa-eye mr-1"></i> Ver Detalles
+                                    </a>
+
+                                    @if($solicitud->estado === 'finalizado')
+                                        <a href="/estudiante/solicitud/{{ $solicitud->id }}/pdf"
+                                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition inline-flex items-center gap-1.5"
+                                            title="Descargar constancia oficial en PDF">
+                                            <i class="fas fa-file-pdf"></i> PDF
+                                        </a>
+                                    @endif
+                                </div>
                             </td>
 
                         </tr>
@@ -230,7 +242,7 @@
                 <i class="fas fa-check-circle text-[10px]"></i> Aprobada y Finalizada
             </span>
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-red-100 text-red-700 border-red-200 font-semibold">
-                <i class="fas fa-times-circle text-[10px]"></i> Rechazada
+                <i class="fas fa-times-circle text-[10px]"></i> Rechazada por Docente o Coordinador
             </span>
         </div>
 
