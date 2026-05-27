@@ -148,6 +148,17 @@
             <p class="text-center text-xs text-gray-500 mt-4 italic">
                 Corrección registrada el {{ \Carbon\Carbon::parse($historialNota->fecha)->format('d/m/Y H:i') }}
             </p>
+
+            {{-- Descarga de la constancia oficial: solo visible cuando el flujo ya
+                 terminó (estado=finalizado y existe historial_notas). El backend
+                 vuelve a validar propiedad + estado antes de emitir el PDF. --}}
+            <div class="flex justify-center mt-5">
+                <a href="/estudiante/solicitud/{{ $solicitud->id }}/pdf"
+                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold uppercase tracking-wider text-sm transition inline-flex items-center gap-2 shadow"
+                    title="Descargar constancia oficial en PDF">
+                    <i class="fas fa-file-pdf text-lg"></i> Descargar Constancia (PDF)
+                </a>
+            </div>
         </div>
         @endif
 

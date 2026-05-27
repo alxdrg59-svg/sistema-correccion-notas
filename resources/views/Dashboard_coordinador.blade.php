@@ -66,7 +66,7 @@
                         <th class="p-4 font-bold text-white text-xs uppercase tracking-wider">Estudiante</th>
                         <th class="p-4 font-bold text-white text-xs uppercase tracking-wider">Materia / Carrera</th>
                         <th class="p-4 font-bold text-white text-xs uppercase tracking-wider">Docente</th>
-                        <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Nota</th>
+                        <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Nota Reclamada</th>
                         <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Estado</th>
                         <th class="p-4 font-bold text-white text-xs uppercase tracking-wider">Fecha</th>
                         <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-right">Acción</th>
@@ -113,16 +113,24 @@
                                         'finalizado'            => 'bg-green-100  text-green-700  border-green-200',
                                     ];
                                     $etiquetas = [
-                                        'pendiente_coordinador' => 'Pendiente',
-                                        'rechazado_coordinador' => 'Rechazada',
-                                        'pendiente_admin'       => 'Aprobada → Admin',
+                                        'pendiente_coordinador' => 'En revisión (Coordinador)',
+                                        'rechazado_coordinador' => 'Rechazada por Coordinador',
+                                        'pendiente_admin'       => 'En revisión (Admin)',
                                         'finalizado'            => 'Finalizada',
                                     ];
+                                    $iconos = [
+                                        'pendiente_coordinador' => 'fa-hourglass-half',
+                                        'rechazado_coordinador' => 'fa-times-circle',
+                                        'pendiente_admin'       => 'fa-hourglass-half',
+                                        'finalizado'            => 'fa-check-circle',
+                                    ];
                                     $estadoKey = $solicitud->estado;
-                                    $estilo    = $clases[$estadoKey] ?? 'bg-gray-100 text-gray-500 border-gray-200';
+                                    $estilo    = $clases[$estadoKey]    ?? 'bg-gray-100 text-gray-500 border-gray-200';
                                     $etiqueta  = $etiquetas[$estadoKey] ?? $estadoKey;
+                                    $icono     = $iconos[$estadoKey]    ?? 'fa-circle';
                                 @endphp
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border {{ $estilo }}">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap {{ $estilo }}">
+                                    <i class="fas {{ $icono }} text-[10px]"></i>
                                     {{ $etiqueta }}
                                 </span>
                             </td>

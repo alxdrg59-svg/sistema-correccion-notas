@@ -137,21 +137,18 @@ class DocenteController extends Controller
                 ->with('error', 'El coordinador ya evaluó esta solicitud. No puedes modificar tu decisión.');
         }
 
-        // Validación base
-        // decision: aprobado o rechazado
+        // Validación base — decision: aprobado o rechazado
+        // Si aprueba, nota_sugerida_admin es obligatoria (nota sugerida al admin, no visible para el estudiante)
+        // Si rechaza, comentario es obligatorio (justificación)
         $rules = [
             'decision'            => 'required|in:aprobado,rechazado',
             'comentario'          => 'nullable|string|max:500',
-            'nota_sugerida_admin' => 'nullable|string|max:500',
-            //
-            'nota_sugerida_admin' => $request->decision === 'aprobado' // Si aprueba, el campo se vuelve obligatorio
-                                                                       //  para que el docente deje una nota sugerida al admin (aunque no es visible para el estudiante)
-                                    ? 'required|string|min:1|max:500' 
-                                    : 'nullable', // <-- agregar
+            'nota_sugerida_admin' => $request->decision === 'aprobado'
+                                    ? 'required|string|min:1|max:500'
+                                    : 'nullable|string|max:500',
             'evidencia'           => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ];
 
-        // Comentario obligatorio si rechaza
         if ($request->decision === 'rechazado') {
             $rules['comentario'] = 'required|string|min:10|max:500';
         }

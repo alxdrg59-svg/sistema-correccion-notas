@@ -41,10 +41,33 @@
         {{-- DATOS DE LA SOLICITUD                          --}}
         {{-- ══════════════════════════════════════════════ --}}
         <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-            <div class="px-6 py-4" style="background-color: #5D0A28;">
+            <div class="px-6 py-4 flex items-center justify-between" style="background-color: #5D0A28;">
                 <h2 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-file-alt"></i> Datos de la Solicitud
                 </h2>
+                @php
+                    $estadoCls = [
+                        'pendiente_docente'     => 'bg-orange-100 text-orange-700 border-orange-300',
+                        'rechazado_docente'     => 'bg-red-100    text-red-700    border-red-300',
+                        'pendiente_coordinador' => 'bg-yellow-100 text-yellow-700 border-yellow-300',
+                        'rechazado_coordinador' => 'bg-red-100    text-red-700    border-red-300',
+                        'pendiente_admin'       => 'bg-blue-100   text-blue-700   border-blue-300',
+                        'finalizado'            => 'bg-green-100  text-green-700  border-green-300',
+                    ];
+                    $estadoLbl = [
+                        'pendiente_docente'     => 'En revisión (Docente)',
+                        'rechazado_docente'     => 'Rechazada por Docente',
+                        'pendiente_coordinador' => 'En revisión (Coordinador)',
+                        'rechazado_coordinador' => 'Rechazada por Coordinador',
+                        'pendiente_admin'       => 'Pendiente de Cierre',
+                        'finalizado'            => 'Finalizada',
+                    ];
+                    $estiloE  = $estadoCls[$solicitud->estado] ?? 'bg-gray-100 text-gray-600 border-gray-300';
+                    $etiqE    = $estadoLbl[$solicitud->estado] ?? $solicitud->estado;
+                @endphp
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap {{ $estiloE }}">
+                    {{ $etiqE }}
+                </span>
             </div>
 
             <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -167,10 +190,72 @@
         @endif
 
         {{-- ══════════════════════════════════════════════════════════════ --}}
-        {{-- FORMULARIO DE CORRECCIÓN                                       --}}
-        {{-- Admin ingresa la nota correcta y finaliza — SIN posibilidad    --}}
-        {{-- de editar después. Acción irreversible.                        --}}
+        {{-- RESULTADO FINAL                                                --}}
+        {{-- Tarjeta verde con la comparativa "Nota Anterior → Nota Nueva". --}}
+        {{-- Solo se muestra cuando el flujo ya terminó (estado=finalizado) --}}
+        {{-- y existe un registro en la tabla historial_notas asociado.     --}}
         {{-- ══════════════════════════════════════════════════════════════ --}}
+        @if($solicitud->estado === 'finalizado' && isset($historialNota) && $historialNota)
+            <div class="bg-green-50 border-2 border-green-400 rounded-xl shadow-md p-6 mb-6">
+                <h3 class="text-green-800 font-extrabold text-lg uppercase tracking-wider flex items-center gap-2 mb-4">
+                    <i class="fas fa-trophy text-green-600"></i> Corrección Aplicada
+                </h3>
+                <div class="flex items-center justify-center gap-8 flex-wrap">
+                    <div class="text-center">
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nota Anterior</p>
+                        <p class="text-4xl font-extrabold text-red-500">{{ $historialNota->nota_anterior }}</p>
+                    </div>
+                    <div class="text-center">
+                        <i class="fas fa-arrow-right text-3xl text-gray-400"></i>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nota Nueva</p>
+                        <p class="text-4xl font-extrabold text-green-600">{{ $historialNota->nota_nueva }}</p>
+                    </div>
+                </div>
+                <p class="text-center text-xs text-gray-500 mt-4 italic">
+                    Registrada el {{ \Carbon\Carbon::parse($historialNota->fecha)->format('d/m/Y H:i') }}
+                </p>
+
+                {{-- Botón de descarga PDF: la constancia oficial de corrección.
+                     Aparece dentro de la tarjeta verde porque solo tiene sentido
+                     cuando la corrección ya quedó aplicada. --}}
+                <div class="flex justify-center mt-5">
+                    <a href="/admin/solicitud/{{ $solicitud->id }}/pdf"
+                        class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold uppercase tracking-wider text-sm transition inline-flex items-center gap-2 shadow"
+                        title="Descargar constancia oficial en PDF">
+                        <i class="fas fa-file-pdf text-lg"></i> Descargar Constancia (PDF)
+                    </a>
+                </div>
+            </div>
+        @endif
+
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- AVISO DE RECHAZO                                              --}}
+        {{-- Tarjeta roja informativa cuando la solicitud fue rechazada    --}}
+        {{-- antes de llegar a la etapa administrativa (por docente o      --}}
+        {{-- por coordinador). El admin no necesita hacer ninguna acción.  --}}
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        @if(in_array($solicitud->estado, ['rechazado_docente', 'rechazado_coordinador']))
+            <div class="bg-red-50 border-2 border-red-300 rounded-xl shadow-md p-6 mb-6 text-center">
+                <i class="fas fa-times-circle text-red-500 text-4xl mb-3"></i>
+                <h3 class="text-red-800 font-extrabold text-lg uppercase tracking-wider">
+                    Solicitud Rechazada
+                </h3>
+                <p class="text-sm text-red-700 mt-1 italic">
+                    Esta solicitud fue rechazada antes de llegar a la etapa administrativa. No requiere acción.
+                </p>
+            </div>
+        @endif
+
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- FORMULARIO DE CORRECCIÓN                                       --}}
+        {{-- Solo aparece cuando el estado es exactamente pendiente_admin.  --}}
+        {{-- El admin ingresa la nota correcta (0.0 – 10.0) y un comentario --}}
+        {{-- opcional. El POST va a /admin/solicitud/{id}/finalizar y deja  --}}
+        {{-- la solicitud cerrada con estado=finalizado. Acción IRREVERSIBLE. --}}
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        @if($solicitud->estado === 'pendiente_admin')
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
             <div class="px-6 py-4" style="background-color: #5D0A28;">
                 <h2 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
@@ -250,30 +335,41 @@
 
             </form>
         </div>
+        @endif {{-- fin del @if pendiente_admin --}}
 
     </div>
 
     <script>
-        // Validación visual de nota en tiempo real
-        document.getElementById('input_nota_nueva').addEventListener('input', function () {
-            var valor      = parseFloat(this.value);
-            var btnFin     = document.getElementById('btn_finalizar');
-            var errorMsg   = document.getElementById('error_nota');
+        // Validación en vivo del campo nota_nueva.
+        // Si el valor está fuera del rango [0, 10] o no es número:
+        //   - muestra el mensaje de error rojo
+        //   - desactiva el botón "Finalizar y Aplicar Corrección"
+        //   - pinta el borde del input en rojo
+        // Si vuelve a ser válido, restaura todo a su estado normal.
+        // El "if (inputNotaNueva)" es necesario porque el formulario solo
+        // existe cuando la solicitud está en pendiente_admin.
+        var inputNotaNueva = document.getElementById('input_nota_nueva');
+        if (inputNotaNueva) {
+            inputNotaNueva.addEventListener('input', function () {
+                var valor      = parseFloat(this.value);
+                var btnFin     = document.getElementById('btn_finalizar');
+                var errorMsg   = document.getElementById('error_nota');
 
-            if (isNaN(valor) || valor < 0 || valor > 10) {
-                errorMsg.classList.remove('hidden');
-                btnFin.disabled           = true;
-                btnFin.style.opacity      = '0.5';
-                btnFin.style.cursor       = 'not-allowed';
-                this.style.borderColor    = '#ef4444';
-            } else {
-                errorMsg.classList.add('hidden');
-                btnFin.disabled           = false;
-                btnFin.style.opacity      = '1';
-                btnFin.style.cursor       = 'pointer';
-                this.style.borderColor    = '#5D0A28';
-            }
-        });
+                if (isNaN(valor) || valor < 0 || valor > 10) {
+                    errorMsg.classList.remove('hidden');
+                    btnFin.disabled           = true;
+                    btnFin.style.opacity      = '0.5';
+                    btnFin.style.cursor       = 'not-allowed';
+                    this.style.borderColor    = '#ef4444';
+                } else {
+                    errorMsg.classList.add('hidden');
+                    btnFin.disabled           = false;
+                    btnFin.style.opacity      = '1';
+                    btnFin.style.cursor       = 'pointer';
+                    this.style.borderColor    = '#5D0A28';
+                }
+            });
+        }
     </script>
 
 </body>
