@@ -10,6 +10,7 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Aquí es donde registramos nuestro middleware personalizado para verificar roles
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
         'rol' => \App\Http\Middleware\VerificarRol::class,

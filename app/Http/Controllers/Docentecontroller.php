@@ -142,8 +142,7 @@ class DocenteController extends Controller
         $rules = [
             'decision'            => 'required|in:aprobado,rechazado',
             'comentario'          => 'nullable|string|max:500',
-            'nota_sugerida_admin' => 'nullable|string|max:500',
-            //
+            // Si aprueba, el campo nota_sugerida_admin se vuelve obligatorio para que el docente deje una nota sugerida al admin (aunque no es visible para el estudiante)
             'nota_sugerida_admin' => $request->decision === 'aprobado' // Si aprueba, el campo se vuelve obligatorio
                                                                        //  para que el docente deje una nota sugerida al admin (aunque no es visible para el estudiante)
                                     ? 'required|string|min:1|max:500' 

@@ -8,12 +8,13 @@ use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
-    // =====================================================
+    // 
     // DASHBOARD: Solo muestra solicitudes en pendiente_admin
     // O sea las que el coordinador ya aprobó
-    // =====================================================
+    // 
     public function index()
     {
+        // Consulta para obtener solo las solicitudes que están en estado 'pendiente_admin'
         $solicitudes = DB::table('solicitudes_correccion')
             ->join('materias', 'solicitudes_correccion.materia_id', '=', 'materias.id')
             ->join('carreras', 'materias.carrera_id', '=', 'carreras.id')
@@ -41,13 +42,14 @@ class AdminController extends Controller
         return view('dashboard_admin', compact('solicitudes'));
     }
 
-    // =====================================================
+
     // DETALLE: Muestra toda la trazabilidad de la solicitud
     // El admin ve decisión del docente y coordinador
     // y el comentario con la nota correcta sugerida
-    // =====================================================
+
     public function verDetalle($id)
     {
+        // Verificar que la solicitud existe y está en pendiente_admin
         $solicitud = DB::table('solicitudes_correccion')
             ->join('materias', 'solicitudes_correccion.materia_id', '=', 'materias.id')
             ->join('carreras', 'materias.carrera_id', '=', 'carreras.id')
@@ -74,7 +76,7 @@ class AdminController extends Controller
                 'docentes.id as docente_id'
             )
             ->first();
-
+    
         if (!$solicitud) {
             return redirect('/admin/dashboard')
                 ->with('error', 'Solicitud no encontrada o ya fue procesada.');

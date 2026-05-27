@@ -8,11 +8,11 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     use Notifiable;
-
-    protected $table = 'usuarios'; // Tu tabla real
-
+    // Especificamos el nombre de la tabla en la base de datos
+    protected $table = 'usuarios'; // ''
+    //
     public $timestamps = false;
-
+    // Definimos los campos que se pueden asignar masivamente (para crear o actualizar registros) 
     protected $fillable = [
         'nombre',
         'correo',
