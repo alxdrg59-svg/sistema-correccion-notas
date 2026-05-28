@@ -11,10 +11,10 @@
 
     {{-- NAVBAR --}}
     <nav style="background-color: #5D0A28;" class="p-4 text-white mb-8 shadow-xl">
-        <div class="container mx-auto flex justify-between items-center">
+        <div class="container mx-auto flex flex-wrap justify-between items-center gap-2">
             <div class="flex items-center space-x-3">
                 <i class="fas fa-university text-2xl"></i>
-                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC — Nueva Solicitud</h1>
+                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC <span class="hidden sm:inline">— Nueva Solicitud</span></h1>
             </div>
             <a href="/estudiante/dashboard" class="hover:text-red-300 transition text-sm font-medium flex items-center gap-2">
                 <i class="fas fa-arrow-left"></i> Volver al Panel
@@ -27,13 +27,13 @@
             class="bg-white shadow-2xl rounded-xl p-8 border-t-8" style="border-color: #5D0A28;">
             @csrf
 
-            <div class="grid grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
                 {{-- ===============================================
                     DATOS DEL SOLICITANTE
                 =============================================== --}}
-                <div class="col-span-2 bg-gray-50 p-4 rounded-lg border grid grid-cols-2 gap-4">
-                    <div class="col-span-2">
+                <div class="sm:col-span-2 bg-gray-50 p-4 rounded-lg border grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
                         <p class="text-sm text-gray-600 uppercase font-bold mb-1">Datos del Solicitante</p>
                         <p class="text-lg font-bold" style="color: #5D0A28;">{{ Auth::user()->nombre }}</p>
                         <p class="text-sm text-gray-500">
@@ -63,7 +63,7 @@
                         Si no hay un periodo activo, se muestra un mensaje genérico.
                     =============================================== --}}
 
-                    <div class="col-span-2 mt-2">
+                    <div class="sm:col-span-2 mt-2">
                         <label class="block text-xs font-bold uppercase mb-1 tracking-wider" style="color: #5D0A28;">
                             Periodo de Evaluación Activo
                         </label>
@@ -105,7 +105,7 @@
                 El select se llena dinámicamente con las materias que el estudiante tiene inscritas,
                 traídas desde la base de datos. Al seleccionar una materia, se autocompletan los campos de sección y docente.
                 =============================================== --}}
-                <div class="col-span-2">
+                <div class="sm:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Materia Sujeta a Corrección</label>
                     <select name="materia_id" id="select_materia"
                         class="w-full p-3 border-2 rounded-lg outline-none focus:border-[#5D0A28] transition"
@@ -153,7 +153,7 @@
                 </div>
 
                 {{-- ── NOTA ── --}}
-                <div id="contenedor_nota" class="col-span-2 p-4 rounded-lg border bg-gray-50 border-gray-200 transition-colors duration-300">
+                <div id="contenedor_nota" class="sm:col-span-2 p-4 rounded-lg border bg-gray-50 border-gray-200 transition-colors duration-300">
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Nota a Proponer (0.0 a 10)</label>
                     <input type="number" step="0.1" min="0.0" max="10"
                         name="nota_actual" id="input_nota"
@@ -167,7 +167,7 @@
                 </div>
 
                 {{-- ── MOTIVO ── --}}
-                <div class="col-span-2">
+                <div class="sm:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Motivo del Reclamo</label>
                     <textarea name="motivo" rows="4"
                         class="w-full p-3 border-2 rounded-lg outline-none focus:border-[#5D0A28] transition"
@@ -176,7 +176,7 @@
                 </div>
 
                 {{-- ── EVIDENCIA ── --}}
-                <div class="col-span-2">
+                <div class="sm:col-span-2">
                     <label class="block text-sm font-bold text-red-600 uppercase mb-1">
                         <i class="fas fa-paperclip mr-1"></i> EVIDENCIA
                         <span class="text-red-500 font-normal normal-case ml-1">(Adjuntar evidencia es obligatorio para excepciones)</span>

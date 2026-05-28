@@ -19,19 +19,19 @@
             El logout se hace con un formulario POST por seguridad (CSRF).
     =================================================== --}}
     <nav style="background-color: #5D0A28;" class="p-4 text-white shadow-xl">
-        <div class="container mx-auto flex justify-between items-center">
+        <div class="container mx-auto flex flex-wrap justify-between items-center gap-2">
             <div class="flex items-center space-x-3">
                 <i class="fas fa-university text-2xl"></i>
-                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC — Portal Académico</h1>
+                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC <span class="hidden sm:inline">— Portal Académico</span></h1>
             </div>
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3">
                 {{-- Badge de rol --}}
                 <span class="bg-white font-bold uppercase px-3 py-1 rounded-full text-xs" style="color: #5D0A28;">
                     Estudiante
                 </span>
                 {{-- Nombre del usuario desde la sesión --}}
-                <span class="font-medium text-sm">
-                    Bienvenido, {{ Auth::user()->nombre }}
+                <span class="font-medium text-sm hidden sm:inline">
+                    {{ Auth::user()->nombre }}
                 </span>
                 {{-- Logout: usa POST por seguridad (CSRF) --}}
                 <form action="{{ route('logout') }}" method="POST" class="inline">
@@ -107,8 +107,8 @@
             Muestra todas las solicitudes del estudiante logueado
             con su estado, fecha y enlace a detalles.
         =================================================== --}}
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-            <table class="w-full text-left border-collapse">
+        <div class="bg-white rounded-xl shadow-md overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[600px]">
                 <thead class="bg-gray-50 border-b">
                     <tr>
                         <th class="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Materia / Evaluación</th>

@@ -10,10 +10,10 @@
 <body class="bg-gray-100 pb-10">
 
     <nav style="background-color: #5D0A28;" class="p-4 text-white mb-8 shadow-xl">
-        <div class="container mx-auto flex justify-between items-center">
+        <div class="container mx-auto flex flex-wrap justify-between items-center gap-2">
             <div class="flex items-center space-x-3">
                 <i class="fas fa-university text-2xl"></i>
-                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC — Solicitud por Excepción</h1>
+                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC <span class="hidden sm:inline">— Solicitud por Excepción</span></h1>
             </div>
             <a href="/docente/dashboard" class="hover:text-red-300 transition text-sm font-medium flex items-center gap-2">
                 <i class="fas fa-arrow-left"></i> Volver al Panel
@@ -57,14 +57,14 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
-                <div class="col-span-2 bg-gray-50 p-4 rounded-lg border">
+                <div class="sm:col-span-2 bg-gray-50 p-4 rounded-lg border">
                     <p class="text-sm text-gray-600 uppercase font-bold mb-1">Docente Solicitante</p>
                     <p class="text-lg font-bold" style="color: #5D0A28;">{{ Auth::user()->nombre }}</p>
                 </div>
 
-                <div class="col-span-2">
+                <div class="sm:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Materia y Sección</label>
                     <select name="materia_seccion" id="select_materia"
                         class="w-full p-3 border-2 rounded-lg outline-none focus:border-[#5D0A28] transition"
@@ -82,7 +82,7 @@
                     <input type="hidden" name="seccion" id="input_seccion">
                 </div>
 
-                <div class="col-span-2">
+                <div class="sm:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Estudiante</label>
                     <select name="estudiante_id" id="select_estudiante"
                         class="w-full p-3 border-2 rounded-lg outline-none focus:border-[#5D0A28] transition"
@@ -115,7 +115,7 @@
                     </p>
                 </div>
 
-                <div class="col-span-2">
+                <div class="sm:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Motivo del Reclamo</label>
                     <textarea name="motivo" rows="3"
                         class="w-full p-3 border-2 rounded-lg outline-none focus:border-[#5D0A28] transition normal-case"
@@ -124,7 +124,7 @@
                         required></textarea>
                 </div>
 
-                <div class="col-span-2 bg-amber-50 p-4 rounded-lg border border-amber-200">
+                <div class="sm:col-span-2 bg-amber-50 p-4 rounded-lg border border-amber-200">
                     <label class="block text-sm font-bold text-amber-800 uppercase mb-1">
                         <i class="fas fa-file-alt mr-1"></i> Justificación de la Excepción
                     </label>

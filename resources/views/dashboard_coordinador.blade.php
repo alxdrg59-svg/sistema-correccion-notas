@@ -11,16 +11,16 @@
 
     {{-- NAVBAR --}}
     <nav style="background-color: #5D0A28;" class="p-4 text-white shadow-xl">
-        <div class="container mx-auto flex justify-between items-center">
+        <div class="container mx-auto flex flex-wrap justify-between items-center gap-2">
             <div class="flex items-center space-x-3">
                 <i class="fas fa-university text-2xl"></i>
-                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC — Portal Coordinador</h1>
+                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC <span class="hidden sm:inline">— Portal Coordinador</span></h1>
             </div>
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3">
                 <span class="bg-white font-bold uppercase px-3 py-1 rounded-full text-xs" style="color: #5D0A28;">
                     Coordinador
                 </span>
-                <span class="font-medium text-sm">{{ Auth::user()->nombre }}</span>
+                <span class="font-medium text-sm hidden sm:inline">{{ Auth::user()->nombre }}</span>
                 <form action="{{ route('logout') }}" method="POST" class="inline">
                     @csrf
                     <button type="submit" class="hover:text-red-300 transition" title="Cerrar Sesión">
@@ -68,8 +68,8 @@
         </div>
 
         {{-- TABLA --}}
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-            <table class="w-full text-left border-collapse">
+        <div class="bg-white rounded-xl shadow-md overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[700px]">
                 <thead style="background-color: #5D0A28;">
                     <tr>
                         <th class="p-4 font-bold text-white text-xs uppercase tracking-wider">Estudiante</th>
