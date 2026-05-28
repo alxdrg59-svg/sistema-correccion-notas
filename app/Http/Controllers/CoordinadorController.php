@@ -45,7 +45,8 @@ class CoordinadorController extends Controller
                 'carreras.nombre as carrera_nombre',
                 'estudiantes.nombre as estudiante_nombre',
                 'estudiantes.carnet as estudiante_carnet',
-                'docentes.nombre as docente_nombre'
+                'docentes.nombre as docente_nombre',
+                'solicitudes_correccion.es_excepcion'
             )
             ->orderBy('solicitudes_correccion.fecha_solicitud', 'desc')
             ->get();
@@ -92,7 +93,8 @@ class CoordinadorController extends Controller
                 'estudiantes.nombre as estudiante_nombre',
                 'estudiantes.carnet as estudiante_carnet',
                 'docentes.nombre as docente_nombre',
-                'docentes.id as docente_id'
+                'docentes.id as docente_id',
+                'solicitudes_correccion.es_excepcion'
             )
             ->first();
 

@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\SolicitudCorreccion; // Asegúrate de que el modelo exista
+use App\Models\SolicitudCorreccion;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 
 class SolicitudController extends Controller
@@ -13,7 +14,9 @@ class SolicitudController extends Controller
     public function index()
     {
         // Cambiado de id_usuario a estudiante_id según tu SQL
-        $solicitudes = SolicitudCorreccion::where('estudiante_id', Auth::id())->get();
+        $solicitudes = SolicitudCorreccion::where('estudiante_id', Auth::id())
+            ->orderBy('fecha_solicitud', 'desc')
+            ->get();
 
         return view('dashboard_estudiante', compact('solicitudes'));
     }
@@ -78,9 +81,10 @@ public function guardarSolicitud(Request $request)
         'materia_id'  => 'required|integer',
         'docente_id'  => 'required|integer',
         'seccion'     => 'required|string',
-        'nota_actual' => 'required|numeric|min:0|max:9.9',
+        'nota_actual' => 'required|numeric|min:0|max:10',
         'periodo_id'  => 'required|integer',
         'motivo'      => 'required|string|min:10',
+        'evidencia'   => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
     ]);
 
     //  BUSCAR PERIODO — con guard para evitar crash si no existe
@@ -118,7 +122,7 @@ public function guardarSolicitud(Request $request)
     }
 
     // INSERT — tabla y estado corregidos
-    DB::table('solicitudes_correccion')->insert([
+    $solicitudId = DB::table('solicitudes_correccion')->insertGetId([
         'estudiante_id'   => Auth::id(),
         'materia_id'      => $request->materia_id,
         'docente_id'      => $request->docente_id,
@@ -132,7 +136,20 @@ public function guardarSolicitud(Request $request)
         'fecha_solicitud' => now(),
     ]);
 
-    // 6. REDIRECCIÓN
+    if ($request->hasFile('evidencia') && $request->file('evidencia')->isValid()) {
+        $extension = $request->file('evidencia')->getClientOriginalExtension();
+        $nombreArchivo = 'evidencia_estudiante_' . $solicitudId . '_' . time() . '.' . $extension;
+        $rutaArchivo = $request->file('evidencia')->storeAs('evidencias', $nombreArchivo, 'gcs');
+
+        DB::table('evidencias')->insert([
+            'solicitud_id' => $solicitudId,
+            'usuario_id'   => Auth::id(),
+            'archivo'      => $rutaArchivo,
+            'descripcion'  => 'Evidencia adjuntada por estudiante',
+            'fecha'        => now(),
+        ]);
+    }
+
     return redirect('/estudiante/dashboard')
         ->with('success', '¡Tu solicitud ha sido enviada al docente con éxito!');
 }
@@ -153,6 +170,7 @@ public function verDetalle($id)
             'solicitudes_correccion.motivo',
             'solicitudes_correccion.estado',
             'solicitudes_correccion.fecha_solicitud',
+            'solicitudes_correccion.es_excepcion',
             'materias.nombre as materia_nombre',
             'docentes.nombre as docente_nombre'
         )
@@ -199,5 +217,74 @@ public function verDetalle($id)
         'accionAdmin',
         'historialNota'
     ));
+}
+
+public function exportarPdf($id)
+{
+    $solicitud = DB::table('solicitudes_correccion')
+        ->join('materias', 'solicitudes_correccion.materia_id', '=', 'materias.id')
+        ->join('carreras', 'materias.carrera_id', '=', 'carreras.id')
+        ->join('facultades', 'carreras.facultad_id', '=', 'facultades.id')
+        ->join('usuarios as estudiantes', 'solicitudes_correccion.estudiante_id', '=', 'estudiantes.id')
+        ->join('usuarios as docentes', 'solicitudes_correccion.docente_id', '=', 'docentes.id')
+        ->where('solicitudes_correccion.id', $id)
+        ->where('solicitudes_correccion.estudiante_id', Auth::id())
+        ->where('solicitudes_correccion.estado', 'finalizado')
+        ->select(
+            'solicitudes_correccion.id', 'solicitudes_correccion.seccion',
+            'solicitudes_correccion.evaluacion', 'solicitudes_correccion.ciclo',
+            'solicitudes_correccion.nota_actual', 'solicitudes_correccion.motivo',
+            'solicitudes_correccion.estado', 'solicitudes_correccion.fecha_solicitud',
+            'materias.nombre as materia_nombre', 'carreras.nombre as carrera_nombre',
+            'facultades.nombre as facultad_nombre', 'estudiantes.nombre as estudiante_nombre',
+            'estudiantes.carnet as estudiante_carnet', 'docentes.nombre as docente_nombre'
+        )
+        ->first();
+
+    if (!$solicitud) {
+        return redirect('/estudiante/dashboard')
+            ->with('error', 'Solo puedes descargar la constancia de tus solicitudes finalizadas.');
+    }
+
+    $historialNota = DB::table('historial_notas')
+        ->where('solicitud_id', $id)->orderBy('fecha', 'desc')->first();
+
+    if (!$historialNota) {
+        return redirect('/estudiante/dashboard')
+            ->with('error', 'No se encontró el historial de notas para generar la constancia.');
+    }
+
+    $decisionDocente = DB::table('aprobaciones')
+        ->join('usuarios', 'aprobaciones.usuario_id', '=', 'usuarios.id')
+        ->where('aprobaciones.solicitud_id', $id)
+        ->where('aprobaciones.accion', 'like', '%docente%')
+        ->orderBy('aprobaciones.fecha', 'desc')
+        ->select('aprobaciones.accion', 'aprobaciones.comentario', 'aprobaciones.fecha', 'usuarios.nombre as actor_nombre')
+        ->first();
+
+    $decisionCoordinador = DB::table('aprobaciones')
+        ->join('usuarios', 'aprobaciones.usuario_id', '=', 'usuarios.id')
+        ->where('aprobaciones.solicitud_id', $id)
+        ->where('aprobaciones.accion', 'like', '%coordinador%')
+        ->orderBy('aprobaciones.fecha', 'desc')
+        ->select('aprobaciones.accion', 'aprobaciones.comentario', 'aprobaciones.fecha', 'usuarios.nombre as actor_nombre')
+        ->first();
+
+    $decisionAdmin = DB::table('aprobaciones')
+        ->join('usuarios', 'aprobaciones.usuario_id', '=', 'usuarios.id')
+        ->where('aprobaciones.solicitud_id', $id)
+        ->where('aprobaciones.accion', 'like', '%admin%')
+        ->orderBy('aprobaciones.fecha', 'desc')
+        ->select('aprobaciones.accion', 'aprobaciones.comentario', 'aprobaciones.fecha', 'usuarios.nombre as actor_nombre')
+        ->first();
+
+    $fechaEmision = now();
+
+    $pdf = Pdf::loadView('pdf.constancia_correccion', compact(
+        'solicitud', 'historialNota', 'decisionDocente',
+        'decisionCoordinador', 'decisionAdmin', 'fechaEmision'
+    ))->setPaper('letter');
+
+    return $pdf->download('Constancia_SCN-' . str_pad($solicitud->id, 6, '0', STR_PAD_LEFT) . '.pdf');
 }
 }

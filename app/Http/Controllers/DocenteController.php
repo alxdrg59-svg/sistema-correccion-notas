@@ -26,6 +26,7 @@ class DocenteController extends Controller
                 'solicitudes_correccion.nota_actual',
                 'solicitudes_correccion.estado',
                 'solicitudes_correccion.fecha_solicitud',
+                'solicitudes_correccion.es_excepcion',
                 'materias.nombre as materia_nombre',
                 'estudiantes.nombre as estudiante_nombre',
                 'estudiantes.carnet as estudiante_carnet'
@@ -56,6 +57,7 @@ class DocenteController extends Controller
                 'solicitudes_correccion.motivo',
                 'solicitudes_correccion.estado',
                 'solicitudes_correccion.fecha_solicitud',
+                'solicitudes_correccion.es_excepcion',
                 'materias.nombre as materia_nombre',
                 'estudiantes.nombre as estudiante_nombre',
                 'estudiantes.carnet as estudiante_carnet'
@@ -99,11 +101,19 @@ class DocenteController extends Controller
             ->orderBy('fecha', 'desc')
             ->first();
 
+        // Traer evidencia subida por el estudiante si existe
+        $evidenciaEstudiante = DB::table('evidencias')
+            ->where('solicitud_id', $id)
+            ->where('descripcion', 'like', '%estudiante%')
+            ->orderBy('fecha', 'desc')
+            ->first();
+
         return view('detalle_solicitud_docente', compact(
             'solicitud',
             'coordinadorYaActuo',
             'decisionDocente',
-            'evidencia'
+            'evidencia',
+            'evidenciaEstudiante'
         ));
     } 
     // PROCESAR DECISIÓN: Aprueba o rechaza la solicitud
@@ -142,12 +152,9 @@ class DocenteController extends Controller
         $rules = [
             'decision'            => 'required|in:aprobado,rechazado',
             'comentario'          => 'nullable|string|max:500',
-            'nota_sugerida_admin' => 'nullable|string|max:500',
-            //
-            'nota_sugerida_admin' => $request->decision === 'aprobado' // Si aprueba, el campo se vuelve obligatorio
-                                                                       //  para que el docente deje una nota sugerida al admin (aunque no es visible para el estudiante)
-                                    ? 'required|string|min:1|max:500' 
-                                    : 'nullable', // <-- agregar
+            'nota_sugerida_admin' => $request->decision === 'aprobado'
+                                    ? 'required|string|min:1|max:500'
+                                    : 'nullable|string|max:500',
             'evidencia'           => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ];
 
@@ -173,7 +180,7 @@ class DocenteController extends Controller
 
         if ($evidenciaPrevia) {
         // Borrar archivo físico del storage
-        Storage::disk('public')->delete($evidenciaPrevia->archivo);
+        Storage::disk('gcs')->delete($evidenciaPrevia->archivo);
         // Borrar registro de la BD
         DB::table('evidencias')->where('id', $evidenciaPrevia->id)->delete();
 }
@@ -185,7 +192,7 @@ class DocenteController extends Controller
             $extension   = $request->file('evidencia')->getClientOriginalExtension();
             $nombreArchivo = 'evidencia_docente_' . $id . '_' . time() . '.' . $extension;
             // Guardar el archivo en el disco público (storage/app/public/evidencias)
-            $rutaArchivo   = $request->file('evidencia')->storeAs('evidencias', $nombreArchivo, 'public');
+            $rutaArchivo   = $request->file('evidencia')->storeAs('evidencias', $nombreArchivo, 'gcs');
 
             // Guardar en tabla evidencias
             DB::table('evidencias')->insert([
@@ -228,5 +235,168 @@ class DocenteController extends Controller
             : 'Solicitud rechazada correctamente.';
 
         return redirect('/docente/dashboard')->with('success', $mensaje);
+    }
+
+    public function excepciones()
+    {
+        $fechaHoy = now()->toDateString();
+
+        $periodoActivo = DB::table('periodos_correccion')
+            ->where('estado', 1)
+            ->where('fecha_inicio', '<=', $fechaHoy)
+            ->where('fecha_fin', '>=', $fechaHoy)
+            ->first();
+
+        $evaluacionAnterior = null;
+        if ($periodoActivo) {
+            $numActual = (int) filter_var($periodoActivo->evaluacion, FILTER_SANITIZE_NUMBER_INT);
+            if ($numActual > 1) {
+                $evaluacionAnterior = 'Evaluacion ' . ($numActual - 1);
+            }
+        }
+
+        if (!$evaluacionAnterior) {
+            return redirect('/docente/dashboard')
+                ->with('error', 'No se puede crear una excepción: no hay un periodo activo o es la primera evaluación.');
+        }
+
+        $materias = DB::table('asignaciones_docente')
+            ->join('materias', 'asignaciones_docente.materia_id', '=', 'materias.id')
+            ->where('asignaciones_docente.docente_id', Auth::id())
+            ->where('asignaciones_docente.estado', 'activa')
+            ->select(
+                'materias.id as materia_id',
+                'materias.nombre as materia_nombre',
+                'asignaciones_docente.seccion',
+                'asignaciones_docente.modalidad',
+                'asignaciones_docente.ciclo_id',
+                'asignaciones_docente.ciclo'
+            )
+            ->get();
+
+        $estudiantesPorMateria = [];
+        foreach ($materias as $materia) {
+            $estudiantes = DB::table('asignaciones_estudiante')
+                ->join('usuarios', 'asignaciones_estudiante.estudiante_id', '=', 'usuarios.id')
+                ->where('asignaciones_estudiante.materia_id', $materia->materia_id)
+                ->where('asignaciones_estudiante.seccion', $materia->seccion)
+                ->where('asignaciones_estudiante.ciclo_id', $materia->ciclo_id)
+                ->select(
+                    'usuarios.id as estudiante_id',
+                    'usuarios.nombre as estudiante_nombre',
+                    'usuarios.carnet as estudiante_carnet'
+                )
+                ->get();
+
+            $key = $materia->materia_id . '_' . $materia->seccion;
+            $estudiantesPorMateria[$key] = $estudiantes;
+        }
+
+        return view('excepciones_docente', compact('materias', 'estudiantesPorMateria', 'evaluacionAnterior'));
+    }
+
+    public function guardarExcepcion(Request $request)
+    {
+        $request->validate([
+            'materia_id'     => 'required|integer',
+            'estudiante_id'  => 'required|integer',
+            'seccion'        => 'required|string',
+            'evaluacion'     => 'required|string|in:Evaluacion 1,Evaluacion 2,Evaluacion 3,Evaluacion 4,Evaluacion 5',
+            'nota_actual'    => 'required|numeric|min:0|max:10',
+            'motivo'         => 'required|string|min:10',
+            'justificacion'  => 'required|string|min:10',
+            'evidencia'      => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ], [
+            'materia_id.required'    => 'Debe seleccionar una materia.',
+            'estudiante_id.required' => 'Debe seleccionar un estudiante.',
+            'seccion.required'       => 'Debe seleccionar una materia para asignar la sección.',
+            'evaluacion.required'    => 'La evaluación es obligatoria.',
+            'nota_actual.required'   => 'Debe ingresar la nota.',
+            'nota_actual.numeric'    => 'La nota debe ser un número válido.',
+            'nota_actual.min'        => 'La nota no puede ser menor a 0.',
+            'nota_actual.max'        => 'La nota no puede ser mayor a 10.',
+            'motivo.required'        => 'Debe ingresar el motivo del reclamo.',
+            'motivo.min'             => 'El motivo debe tener al menos 10 caracteres.',
+            'justificacion.required' => 'Debe justificar por qué se solicita la excepción.',
+            'justificacion.min'      => 'La justificación debe tener al menos 10 caracteres.',
+            'evidencia.mimes'        => 'Solo se permiten archivos JPG, PNG o PDF.',
+            'evidencia.max'          => 'El archivo no puede superar los 5MB.',
+        ]);
+
+        $asignacion = DB::table('asignaciones_docente')
+            ->where('docente_id', Auth::id())
+            ->where('materia_id', $request->materia_id)
+            ->where('seccion', $request->seccion)
+            ->first();
+
+        if (!$asignacion) {
+            return redirect('/docente/excepciones')
+                ->with('error', 'No tienes asignación para esta materia y sección.');
+        }
+
+        $yaExiste = DB::table('solicitudes_correccion')
+            ->where('estudiante_id', $request->estudiante_id)
+            ->where('materia_id', $request->materia_id)
+            ->where('docente_id', Auth::id())
+            ->where('evaluacion', $request->evaluacion)
+            ->where('ciclo_id', $asignacion->ciclo_id)
+            ->whereNotIn('estado', ['rechazado_docente', 'rechazado_coordinador'])
+            ->exists();
+
+        if ($yaExiste) {
+            return redirect('/docente/excepciones')
+                ->with('error', 'Ya existe una solicitud activa para este estudiante, materia y evaluación.');
+        }
+
+        $cicloData = DB::table('ciclos_academicos')
+            ->where('id', $asignacion->ciclo_id)
+            ->first();
+
+        $solicitudId = DB::table('solicitudes_correccion')->insertGetId([
+            'estudiante_id'   => $request->estudiante_id,
+            'materia_id'      => $request->materia_id,
+            'docente_id'      => Auth::id(),
+            'seccion'         => $request->seccion,
+            'nota_actual'     => $request->nota_actual,
+            'motivo'          => $request->motivo,
+            'evaluacion'      => $request->evaluacion,
+            'ciclo_id'        => $asignacion->ciclo_id,
+            'ciclo'           => $cicloData->nombre ?? $asignacion->ciclo,
+            'estado'          => 'pendiente_coordinador',
+            'es_excepcion'    => 1,
+            'fecha_solicitud' => now(),
+        ]);
+
+        if ($request->hasFile('evidencia') && $request->file('evidencia')->isValid()) {
+            $extension = $request->file('evidencia')->getClientOriginalExtension();
+            $nombreArchivo = 'evidencia_excepcion_' . $solicitudId . '_' . time() . '.' . $extension;
+            $rutaArchivo = $request->file('evidencia')->storeAs('evidencias', $nombreArchivo, 'gcs');
+
+            DB::table('evidencias')->insert([
+                'solicitud_id' => $solicitudId,
+                'usuario_id'   => Auth::id(),
+                'archivo'      => $rutaArchivo,
+                'descripcion'  => 'Evidencia de excepción adjuntada por docente',
+                'fecha'        => now(),
+            ]);
+        }
+
+        DB::table('aprobaciones')->insert([
+            'solicitud_id' => $solicitudId,
+            'usuario_id'   => Auth::id(),
+            'accion'       => 'Aprobado por docente (excepción)',
+            'comentario'   => $request->justificacion,
+            'fecha'        => now(),
+        ]);
+
+        DB::table('bitacora')->insert([
+            'usuario_id' => Auth::id(),
+            'accion'     => 'Excepción creada por docente',
+            'detalle'    => 'Solicitud de excepción #' . $solicitudId . ' creada para estudiante ID ' . $request->estudiante_id,
+            'fecha'      => now(),
+        ]);
+
+        return redirect('/docente/dashboard')
+            ->with('success', 'Solicitud de excepción creada exitosamente. Ha sido enviada al coordinador.');
     }
 }

@@ -76,9 +76,16 @@
                     $estilo    = $clases[$estadoKey]    ?? 'bg-gray-100 text-gray-600 border-gray-300';
                     $etiqueta  = $etiquetas[$estadoKey] ?? $estadoKey;
                 @endphp
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border {{ $estilo }}">
-                    {{ $etiqueta }}
-                </span>
+                <div class="flex items-center gap-2">
+                    @if($solicitud->es_excepcion)
+                        <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-300 px-3 py-1.5 rounded-full text-xs font-bold uppercase">
+                            <i class="fas fa-exclamation-circle"></i> Excepción
+                        </span>
+                    @endif
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border {{ $estilo }}">
+                        {{ $etiqueta }}
+                    </span>
+                </div>
             </div>
 
             <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -124,6 +131,30 @@
             </div>
         </div>
 
+        {{-- EVIDENCIA DEL ESTUDIANTE --}}
+        @if($evidenciaEstudiante)
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6">
+            <p class="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">
+                <i class="fas fa-paperclip mr-1"></i> Evidencia adjunta por el Estudiante
+            </p>
+            <div class="flex items-center gap-3 mt-1">
+                <a href="{{ route('evidencia.ver', $evidenciaEstudiante->id) }}" target="_blank"
+                    style="color: #5D0A28;"
+                    class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
+                    <i class="fas fa-eye"></i> Ver
+                </a>
+                <a href="{{ route('evidencia.descargar', $evidenciaEstudiante->id) }}"
+                    style="color: #5D0A28;"
+                    class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
+                    <i class="fas fa-download"></i> Descargar
+                </a>
+            </div>
+            <p class="text-xs text-gray-400 mt-1.5">
+                Subida el {{ \Carbon\Carbon::parse($evidenciaEstudiante->fecha)->format('d/m/Y H:i') }}
+            </p>
+        </div>
+        @endif
+
         {{-- ===================================================
             DECISIÓN PREVIA DEL DOCENTE (si existe)
             Si el docente ya tomó una decisión antes, se muestra aquí para referencia.
@@ -159,13 +190,19 @@
             <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                 <i class="fas fa-paperclip mr-1"></i> Evidencia adjunta
             </p>
-            <a href="{{ asset('storage/' . $evidencia->archivo) }}" target="_blank"
-                style="color: #5D0A28;"
-                class="text-sm font-bold hover:underline flex items-center gap-2">
-                <i class="fas fa-file-download"></i>
-                Ver archivo de evidencia
-            </a>
-            <p class="text-xs text-gray-400 mt-1">
+            <div class="flex items-center gap-3 mt-1">
+                <a href="{{ route('evidencia.ver', $evidencia->id) }}" target="_blank"
+                    style="color: #5D0A28;"
+                    class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
+                    <i class="fas fa-eye"></i> Ver
+                </a>
+                <a href="{{ route('evidencia.descargar', $evidencia->id) }}"
+                    style="color: #5D0A28;"
+                    class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
+                    <i class="fas fa-download"></i> Descargar
+                </a>
+            </div>
+            <p class="text-xs text-gray-400 mt-1.5">
                 Subida el {{ \Carbon\Carbon::parse($evidencia->fecha)->format('d/m/Y H:i') }}
             </p>
         </div>

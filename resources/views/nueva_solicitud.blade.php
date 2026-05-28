@@ -23,7 +23,7 @@
     </nav>
 
     <div class="container mx-auto max-w-4xl px-4">
-        <form action="/estudiante/guardar-solicitud" method="POST"
+        <form action="/estudiante/guardar-solicitud" method="POST" enctype="multipart/form-data"
             class="bg-white shadow-2xl rounded-xl p-8 border-t-8" style="border-color: #5D0A28;">
             @csrf
 
@@ -106,7 +106,7 @@
                 traídas desde la base de datos. Al seleccionar una materia, se autocompletan los campos de sección y docente.
                 =============================================== --}}
                 <div class="col-span-2">
-                    <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Materia Objeto de Corrección</label>
+                    <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Materia Sujeta a Corrección</label>
                     <select name="materia_id" id="select_materia"
                         class="w-full p-3 border-2 rounded-lg outline-none focus:border-[#5D0A28] transition"
                         required>
@@ -154,15 +154,15 @@
 
                 {{-- ── NOTA ── --}}
                 <div id="contenedor_nota" class="col-span-2 p-4 rounded-lg border bg-gray-50 border-gray-200 transition-colors duration-300">
-                    <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Nota Publicada (0.0 a 9.9)</label>
-                    <input type="number" step="0.1" min="0.0" max="9.9"
+                    <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Nota a Proponer (0.0 a 10)</label>
+                    <input type="number" step="0.1" min="0.0" max="10"
                         name="nota_actual" id="input_nota"
                         class="w-full p-3 border-2 rounded-lg outline-none bg-white"
                         style="focus-border-color: #5D0A28;"
                         placeholder="Ej: 7.5"
                         required>
                     <p id="error_nota" class="text-red-600 text-sm font-bold mt-2 hidden">
-                        ⚠️ La nota no puede ser mayor a 9.9 ni menor a 0.0. Revise el valor ingresado.
+                        ⚠️ La nota no puede ser mayor a 10 ni menor a 0. Revise el valor ingresado.
                     </p>
                 </div>
 
@@ -173,6 +173,17 @@
                         class="w-full p-3 border-2 rounded-lg outline-none focus:border-[#5D0A28] transition"
                         placeholder="Explique detalladamente por qué solicita la corrección..."
                         required></textarea>
+                </div>
+
+                {{-- ── EVIDENCIA ── --}}
+                <div class="col-span-2">
+                    <label class="block text-sm font-bold text-red-600 uppercase mb-1">
+                        <i class="fas fa-paperclip mr-1"></i> EVIDENCIA
+                        <span class="text-red-500 font-normal normal-case ml-1">(Adjuntar evidencia es obligatorio para excepciones)</span>
+                    </label>
+                    <input type="file" name="evidencia" accept=".jpg,.jpeg,.png,.pdf"
+                        class="w-full p-2 border-2 border-red-300 rounded-lg bg-white text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-red-100 file:text-red-700 hover:file:bg-red-200 transition">
+                    <p class="text-xs text-red-500 mt-1">Formatos: JPG, PNG, PDF — Maximo 5MB</p>
                 </div>
 
             </div>
@@ -229,7 +240,7 @@
             var errorMsg   = document.getElementById('error_nota');
             var contenedor = document.getElementById('contenedor_nota');
 
-            if (valor > 9.9 || valor < 0 || isNaN(valor)) {
+            if (valor > 10 || valor < 0 || isNaN(valor)) {
                 errorMsg.classList.remove('hidden');
                 btnSubmit.disabled = true;
                 btnSubmit.style.opacity = '0.5';

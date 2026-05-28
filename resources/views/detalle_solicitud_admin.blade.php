@@ -41,10 +41,15 @@
         {{-- DATOS DE LA SOLICITUD                          --}}
         {{-- ══════════════════════════════════════════════ --}}
         <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-            <div class="px-6 py-4" style="background-color: #5D0A28;">
+            <div class="px-6 py-4 flex items-center justify-between" style="background-color: #5D0A28;">
                 <h2 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-file-alt"></i> Datos de la Solicitud
                 </h2>
+                @if($solicitud->es_excepcion)
+                    <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-300 px-3 py-1.5 rounded-full text-xs font-bold uppercase">
+                        <i class="fas fa-exclamation-circle"></i> Excepción
+                    </span>
+                @endif
             </div>
 
             <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -158,11 +163,18 @@
             <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                 <i class="fas fa-paperclip mr-1"></i> Evidencia del Docente
             </p>
-            <a href="{{ asset('storage/' . $evidenciaDocente->archivo) }}" target="_blank"
-                style="color: #5D0A28;"
-                class="text-sm font-bold hover:underline flex items-center gap-2">
-                <i class="fas fa-file-download"></i> Ver archivo de evidencia
-            </a>
+            <div class="flex items-center gap-3 mt-1">
+                <a href="{{ route('evidencia.ver', $evidenciaDocente->id) }}" target="_blank"
+                    style="color: #5D0A28;"
+                    class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
+                    <i class="fas fa-eye"></i> Ver
+                </a>
+                <a href="{{ route('evidencia.descargar', $evidenciaDocente->id) }}"
+                    style="color: #5D0A28;"
+                    class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
+                    <i class="fas fa-download"></i> Descargar
+                </a>
+            </div>
         </div>
         @endif
 
@@ -187,6 +199,37 @@
             </div>
 
             {{-- Errores de validación --}}
+            @if($solicitud->estado === 'finalizado' && $historialNota)
+            <div class="p-6">
+                <div class="bg-green-50 border-2 border-green-400 rounded-xl p-6">
+                    <h3 class="text-green-800 font-extrabold text-lg uppercase tracking-wider flex items-center gap-2 mb-4">
+                        <i class="fas fa-trophy text-green-600"></i> Resultado Final
+                    </h3>
+                    <div class="flex items-center justify-center gap-8 flex-wrap">
+                        <div class="text-center">
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nota Anterior</p>
+                            <p class="text-4xl font-extrabold text-red-500">{{ $historialNota->nota_anterior }}</p>
+                        </div>
+                        <div class="text-center"><i class="fas fa-arrow-right text-3xl text-gray-400"></i></div>
+                        <div class="text-center">
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nota Nueva</p>
+                            <p class="text-4xl font-extrabold text-green-600">{{ $historialNota->nota_nueva }}</p>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <a href="/admin/solicitud/{{ $solicitud->id }}/pdf"
+                            style="background-color: #5D0A28;"
+                            onmouseover="this.style.backgroundColor='#4A0820'"
+                            onmouseout="this.style.backgroundColor='#5D0A28'"
+                            class="text-white px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition inline-flex items-center gap-2 shadow">
+                            <i class="fas fa-file-pdf"></i> Descargar Constancia PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            @if($solicitud->estado === 'pendiente_admin')
             @if($errors->any())
                 <div class="mx-6 mt-4 bg-red-50 border-l-4 border-red-500 p-3 rounded">
                     @foreach($errors->all() as $error)
@@ -249,13 +292,14 @@
                 </div>
 
             </form>
+            @endif
         </div>
 
     </div>
 
     <script>
-        // Validación visual de nota en tiempo real
-        document.getElementById('input_nota_nueva').addEventListener('input', function () {
+        var inputNota = document.getElementById('input_nota_nueva');
+        if (inputNota) inputNota.addEventListener('input', function () {
             var valor      = parseFloat(this.value);
             var btnFin     = document.getElementById('btn_finalizar');
             var errorMsg   = document.getElementById('error_nota');

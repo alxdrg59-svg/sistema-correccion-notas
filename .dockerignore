@@ -1,0 +1,12 @@
+.git
+.github
+node_modules
+vendor
+.env
+.env.local
+tests
+phpunit.xml
+.styleci.yml
+.editorconfig
+CHANGELOG.md
+README.md

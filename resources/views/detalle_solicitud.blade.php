@@ -78,9 +78,16 @@
                     $etiqueta  = $etiquetas[$estadoKey] ?? $estadoKey;
                     $icono     = $iconos[$estadoKey]    ?? 'fa-circle';
                 @endphp
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border {{ $estilo }}">
-                    <i class="fas {{ $icono }} text-[10px]"></i> {{ $etiqueta }}
-                </span>
+                <div class="flex items-center gap-2">
+                    @if($solicitud->es_excepcion)
+                        <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-300 px-3 py-1.5 rounded-full text-xs font-bold uppercase">
+                            <i class="fas fa-exclamation-circle"></i> Excepción
+                        </span>
+                    @endif
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border {{ $estilo }}">
+                        <i class="fas {{ $icono }} text-[10px]"></i> {{ $etiqueta }}
+                    </span>
+                </div>
             </div>
 
             <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -148,6 +155,15 @@
             <p class="text-center text-xs text-gray-500 mt-4 italic">
                 Corrección registrada el {{ \Carbon\Carbon::parse($historialNota->fecha)->format('d/m/Y H:i') }}
             </p>
+            <div class="text-center mt-4">
+                <a href="/estudiante/solicitud/{{ $solicitud->id }}/pdf"
+                    style="background-color: #5D0A28;"
+                    onmouseover="this.style.backgroundColor='#4A0820'"
+                    onmouseout="this.style.backgroundColor='#5D0A28'"
+                    class="text-white px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition inline-flex items-center gap-2 shadow">
+                    <i class="fas fa-file-pdf"></i> Descargar Constancia PDF
+                </a>
+            </div>
         </div>
         @endif
 
