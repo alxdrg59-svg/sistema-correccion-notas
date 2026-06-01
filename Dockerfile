@@ -22,14 +22,6 @@ RUN composer install --no-dev --no-scripts --no-autoloader
 COPY . .
 RUN composer dump-autoload --optimize
 
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install \
-    && npm run build \
-    && apt-get remove -y nodejs \
-    && apt-get autoremove -y \
-    && rm -rf node_modules
-
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
