@@ -1,48 +1,22 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\AuthController;
-use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 use App\Http\Controllers\SolicitudController;
 use App\Http\Controllers\DocenteController;
 use App\Http\Controllers\CoordinadorController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\EvidenciaController;
 
 Route::get('/', function () {
     return redirect('/login');
 });
 
-Route::get('/prueba-db', function () {
-    try {
-        $usuarios = DB::table('usuarios')->get();
-        return $usuarios;
-    } catch (\Exception $e) {
-        return "Error al conectar: " . $e->getMessage();
-    }
-});
-
-// Ruta para mostrar el formulario
 Route::get('/login', function () {
-    return view('login');
+    return view('auth.login');
 })->name('login');
 
-// Ruta para procesar los datos cuando des clic al botón
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
-
-Route::get('/encriptar-mi-clave', function () {
-    // Buscamos a tu usuario por correo (ajusta el correo si es otro)
-    $user = User::where('correo', 'luis.m@utec.com')->first();
-    
-    if ($user) {
-        $user->password = Hash::make('1234'); // Aquí la encriptamos
-        $user->save();
-        return "Contraseña actualizada para Luis. ¡Ya puedes intentar el login!";
-    }
-    
-    return "Usuario no encontrado.";
-});
 // Rutas protegidas por autenticación y rol
 // Dashboard del estudiante, muestra sus solicitudes
 Route::get('/estudiante/dashboard', [SolicitudController::class, 'index'])
@@ -121,37 +95,11 @@ Route::get('/admin/periodos', [AdminController::class, 'periodos'])
 Route::post('/admin/ciclos/{id}/actualizar', [AdminController::class, 'actualizarCiclo'])
     ->middleware(['auth', 'rol:admin']);
 
-// Ruta para servir evidencias desde GCS
-Route::get('/evidencia/{id}/ver', function ($id) {
-    $evidencia = DB::table('evidencias')->where('id', $id)->first();
-    if (!$evidencia) { abort(404); }
+// Rutas para servir evidencias desde Google Cloud Storage
+Route::get('/evidencia/{id}/ver', [EvidenciaController::class, 'ver'])
+    ->middleware('auth')->name('evidencia.ver');
 
-    $disk = \Illuminate\Support\Facades\Storage::disk('gcs');
-    if (!$disk->exists($evidencia->archivo)) { abort(404); }
-
-    $extension = strtolower(pathinfo($evidencia->archivo, PATHINFO_EXTENSION));
-    $mimeTypes = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'pdf' => 'application/pdf'];
-    $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
-
-    return response($disk->get($evidencia->archivo), 200)
-        ->header('Content-Type', $mimeType)
-        ->header('Content-Disposition', 'inline; filename="' . basename($evidencia->archivo) . '"');
-})->middleware('auth')->name('evidencia.ver');
-
-Route::get('/evidencia/{id}/descargar', function ($id) {
-    $evidencia = DB::table('evidencias')->where('id', $id)->first();
-    if (!$evidencia) { abort(404); }
-
-    $disk = \Illuminate\Support\Facades\Storage::disk('gcs');
-    if (!$disk->exists($evidencia->archivo)) { abort(404); }
-
-    $extension = strtolower(pathinfo($evidencia->archivo, PATHINFO_EXTENSION));
-    $mimeTypes = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'pdf' => 'application/pdf'];
-    $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
-
-    return response($disk->get($evidencia->archivo), 200)
-        ->header('Content-Type', $mimeType)
-        ->header('Content-Disposition', 'attachment; filename="' . basename($evidencia->archivo) . '"');
-})->middleware('auth')->name('evidencia.descargar');
+Route::get('/evidencia/{id}/descargar', [EvidenciaController::class, 'descargar'])
+    ->middleware('auth')->name('evidencia.descargar');
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

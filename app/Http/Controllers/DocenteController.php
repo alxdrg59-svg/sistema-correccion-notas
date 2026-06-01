@@ -50,7 +50,7 @@ class DocenteController extends Controller
             ->orderBy('solicitudes_correccion.fecha_solicitud', 'desc')
             ->get();
 
-        return view('dashboard_docente', compact('solicitudes'));
+        return view('docente.dashboard', compact('solicitudes'));
     }
 
     // =====================================================
@@ -135,7 +135,7 @@ class DocenteController extends Controller
             ->orderBy('fecha', 'desc')
             ->get();
 
-        return view('detalle_solicitud_docente', compact(
+        return view('docente.detalle_solicitud', compact(
             'solicitud',
             'coordinadorYaActuo',
             'decisionDocente',

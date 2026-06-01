@@ -30,7 +30,7 @@ class SolicitudController extends Controller
             ->orderBy('fecha_solicitud', 'desc')
             ->get();
 
-        return view('dashboard_estudiante', compact('solicitudes'));
+        return view('estudiante.dashboard', compact('solicitudes'));
     }
 
     // =====================================================
@@ -134,7 +134,7 @@ class SolicitudController extends Controller
 
         // Enviar todo a la vista: datos del estudiante, materias, periodo,
         // si estamos en modo excepcion, y la evaluacion anterior disponible
-        return view('nueva_solicitud', compact(
+        return view('estudiante.nueva_solicitud', compact(
             'datosEstudiante',
             'materias',
             'periodoActivo',
@@ -425,7 +425,7 @@ class SolicitudController extends Controller
             ->orderBy('fecha', 'desc')
             ->first();
 
-        return view('detalle_solicitud', compact(
+        return view('estudiante.detalle_solicitud', compact(
             'solicitud',
             'aprobaciones',
             'accionDocente',

@@ -1,34 +1,11 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalle de Solicitud — UTEC</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body class="bg-gray-100 min-h-screen pb-12">
+@extends('layouts.app')
 
-    {{-- NAVBAR --}}
-    <nav style="background-color: #5D0A28;" class="p-4 text-white shadow-xl">
-        <div class="container mx-auto flex flex-wrap justify-between items-center gap-2">
-            <div class="flex items-center space-x-3">
-                <i class="fas fa-university text-2xl"></i>
-                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC <span class="hidden sm:inline">— Portal Académico</span></h1>
-            </div>
-            <div class="flex items-center space-x-3">
-                <span class="bg-white font-bold uppercase px-3 py-1 rounded-full text-xs" style="color: #5D0A28;">Estudiante</span>
-                <span class="font-medium text-sm hidden sm:inline">{{ Auth::user()->nombre }}</span>
-                <form action="{{ route('logout') }}" method="POST" class="inline">
-                    @csrf
-                    <button type="submit" class="hover:text-red-300 transition" title="Cerrar Sesión">
-                        <i class="fas fa-sign-out-alt text-lg"></i>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </nav>
+@section('title', 'Detalle de Solicitud')
+@section('subtitle', 'Portal Académico')
+@section('rol', 'Estudiante')
+@section('body-class', 'pb-12')
 
+@section('content')
     <div class="container mx-auto max-w-4xl mt-8 px-4">
 
         {{-- Botón volver --}}
@@ -38,11 +15,7 @@
             <i class="fas fa-arrow-left mr-2"></i> Volver a Mis Solicitudes
         </a>
 
-        {{-- ===============================================
-        DATOS PRINCIPALES DE LA SOLICITUD
-        Muestra los datos básicos de la solicitud: materia, docente, evaluación,
-        ciclo, sección, nota reclamada, motivo y fecha de envío.
-        =============================================== --}}
+        {{-- DATOS PRINCIPALES DE LA SOLICITUD --}}
         <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
             <div class="px-6 py-4 flex flex-wrap items-center justify-between gap-2" style="background-color: #5D0A28;">
                 <h2 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
@@ -130,12 +103,7 @@
             </div>
         </div>
 
-        {{-- ===============================================
-            BOTON DE CANCELAR SOLICITUD
-            Solo se muestra si la solicitud esta en 'pendiente_docente'
-            y han pasado menos de 3 horas desde que fue enviada.
-            Muestra el tiempo restante para cancelar.
-        =============================================== --}}
+        {{-- BOTON DE CANCELAR SOLICITUD --}}
         @if($solicitud->estado === 'pendiente_docente')
             @php
                 $fechaCreacion = \Carbon\Carbon::parse($solicitud->fecha_solicitud);
@@ -182,10 +150,7 @@
             @endif
         @endif
 
-            {{-- ===============================================
-            RESULTADO FINAL DE LA CORRECCIÓN
-            Solo se muestra si la solicitud está finalizada y hay un historial de nota.
-            =============================================== --}}
+        {{-- RESULTADO FINAL DE LA CORRECCIÓN --}}
         @if($solicitud->estado === 'finalizado' && $historialNota)
         <div class="bg-green-50 border-2 border-green-400 rounded-xl shadow-md p-6 mb-6">
             <h3 class="text-green-800 font-extrabold text-lg uppercase tracking-wider flex items-center gap-2 mb-4">
@@ -219,14 +184,7 @@
         </div>
         @endif
 
-                    {{-- ===============================================
-                    SEGUIMIENTO DE LA SOLICITUD
-                    Muestra una línea de tiempo con cada paso del proceso:
-                    1. Envío (siempre completo)
-                    2. Revisión del Docente (aprobado/rechazado/pendiente)
-                    3. Revisión del Coordinador (aprobado/rechazado/pendiente/bloqueado)
-                    4. Cierre Administrativo (aprobado/pendiente/bloqueado)
-                        =============================================== --}}
+        {{-- SEGUIMIENTO DE LA SOLICITUD --}}
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
             <div class="px-6 py-4" style="background-color: #5D0A28;">
                 <h2 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
@@ -239,7 +197,7 @@
                     {{-- Línea conectora vertical --}}
                     <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200 z-0"></div>
 
-                    {{-- ── PASO 1: Enviada (siempre completo) ── --}}
+                    {{-- PASO 1: Enviada (siempre completo) --}}
                     <div class="relative flex items-start gap-4 mb-8 z-10">
                         <div class="flex-shrink-0 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-md">
                             <i class="fas fa-paper-plane text-white text-sm"></i>
@@ -255,10 +213,7 @@
                         </div>
                     </div>
 
-                    {{-- ===============================================
-                        Docente
-                        Es el primer paso de revisión, se desbloquea apenas se envía la solicitud.
-                            =============================================== --}}
+                    {{-- Docente --}}
                     @php
                         $docenteActuo   = !is_null($accionDocente);
                         $docenteAprobó  = $docenteActuo && stripos($accionDocente->accion, 'rechazado') === false;
@@ -293,10 +248,7 @@
                         </div>
                     </div>
 
-                    {{-- ===============================================
-                        Coordinador de Facultad
-                        Se desbloquea solo si el docente aprobó (no rechazó).
-                            =============================================== --}}
+                    {{-- Coordinador de Facultad --}}
                     @php
                         $coordinadorActuo   = !is_null($accionCoordinador);
                         $coordinadorAprobó  = $coordinadorActuo && stripos($accionCoordinador->accion, 'rechazado') === false;
@@ -336,10 +288,7 @@
                         </div>
                     </div>
 
-                    {{-- ===============================================
-                        Cierre Administrativo
-                        Este paso se desbloquea solo si el coordinador aprobó.
-                            =============================================== --}}
+                    {{-- Cierre Administrativo --}}
                     @php
                         $adminActuo     = !is_null($accionAdmin);
                         $adminBloqueado = !$coordinadorAprobó;
@@ -381,5 +330,4 @@
         </div>
 
     </div>
-</body>
-</html>
+@endsection

@@ -23,39 +23,23 @@
        - $evaluacionAnterior: nombre de la evaluacion anterior
          (null si es Evaluacion 1 y no hay anterior)
 ===================================================== --}}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nueva Solicitud - UTEC</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body class="bg-gray-100 pb-10">
+@extends('layouts.app')
 
-    {{-- NAVBAR: Barra de navegacion con boton para volver al panel --}}
-    <nav style="background-color: #5D0A28;" class="p-4 text-white mb-8 shadow-xl">
-        <div class="container mx-auto flex flex-wrap justify-between items-center gap-2">
-            <div class="flex items-center space-x-3">
-                <i class="fas fa-university text-2xl"></i>
-                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC <span class="hidden sm:inline">— Nueva Solicitud</span></h1>
-            </div>
-            <a href="/estudiante/dashboard" class="hover:text-red-300 transition text-sm font-medium flex items-center gap-2">
-                <i class="fas fa-arrow-left"></i> Volver al Panel
-            </a>
-        </div>
-    </nav>
+@section('title', 'Nueva Solicitud')
+@section('subtitle', 'Nueva Solicitud')
+@section('body-class', 'pb-10')
+@section('nav-class', 'mb-8')
 
+@section('nav-right')
+    <a href="/estudiante/dashboard" class="hover:text-red-300 transition text-sm font-medium flex items-center gap-2">
+        <i class="fas fa-arrow-left"></i> Volver al Panel
+    </a>
+@endsection
+
+@section('content')
     <div class="container mx-auto max-w-4xl px-4">
 
-        {{-- ===============================================
-            ALERTA DE MODO EXCEPCION FORZADO
-            Solo se muestra cuando no hay periodo activo.
-            Avisa al estudiante que su solicitud sera
-            enviada como excepcion y que la evidencia
-            es obligatoria.
-        =============================================== --}}
+        {{-- ALERTA DE MODO EXCEPCION FORZADO --}}
         @if($modoExcepcion)
         <div class="bg-amber-50 border-l-4 border-amber-500 text-amber-800 p-4 mb-6 rounded-r-lg shadow-md font-medium text-sm flex items-start gap-3">
             <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5 text-lg"></i>
@@ -66,42 +50,14 @@
         </div>
         @endif
 
-        {{-- ===============================================
-            FORMULARIO DE SOLICITUD
-            Se envia por POST a /estudiante/guardar-solicitud
-            con enctype multipart para permitir subir archivos
-        =============================================== --}}
-        {{-- Mostrar errores de validacion si los hay --}}
-        @if($errors->any())
-            <div class="bg-red-50 border-l-4 border-red-600 text-red-700 p-4 mb-4 rounded-r-lg shadow-md text-sm">
-                <p class="font-bold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> Por favor corrija los siguientes errores:</p>
-                <ul class="list-disc list-inside">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        {{-- Mostrar mensaje de error del controlador --}}
-        @if(session('error'))
-            <div class="bg-red-50 border-l-4 border-red-600 text-red-700 p-4 mb-4 rounded-r-lg shadow-md font-medium text-sm flex items-center">
-                <i class="fas fa-exclamation-triangle mr-2"></i>
-                <span>{{ session('error') }}</span>
-            </div>
-        @endif
-
+        {{-- FORMULARIO DE SOLICITUD --}}
         <form action="/estudiante/guardar-solicitud" method="POST" enctype="multipart/form-data"
             class="bg-white shadow-2xl rounded-xl p-8 border-t-8" style="border-color: #5D0A28;">
             @csrf
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
-                {{-- ===============================================
-                    DATOS DEL SOLICITANTE
-                    Muestra nombre, carnet, facultad y carrera del
-                    estudiante logueado. Son campos de solo lectura.
-                =============================================== --}}
+                {{-- DATOS DEL SOLICITANTE --}}
                 <div class="sm:col-span-2 bg-gray-50 p-4 rounded-lg border grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2">
                         <p class="text-sm text-gray-600 uppercase font-bold mb-1">Datos del Solicitante</p>
@@ -127,15 +83,7 @@
                             readonly>
                     </div>
 
-                    {{-- ===============================================
-                        PERIODO DE EVALUACION
-                        Muestra el periodo activo o el ultimo periodo
-                        que vencio (segun el modo). El titulo cambia:
-                        - Modo normal: "Periodo de Evaluación Activo"
-                        - Modo excepcion: "Ultimo Periodo Registrado"
-                        El ID del periodo se envia como campo oculto
-                        para que el controlador pueda buscarlo en la BD.
-                    =============================================== --}}
+                    {{-- PERIODO DE EVALUACION --}}
                     <div class="sm:col-span-2 mt-2">
                         <label class="block text-xs font-bold uppercase mb-1 tracking-wider" style="color: #5D0A28;">
                             {{ $modoExcepcion ? 'Ultimo Periodo Registrado' : 'Periodo de Evaluación Activo' }}
@@ -147,7 +95,6 @@
                             style="background-color: #fff5f7; border-color: #5D0A28; color: #5D0A28;"
                             readonly>
 
-                        {{-- Mostrar las fechas del periodo si existen --}}
                         @if(isset($periodoActivo->fecha_inicio) && isset($periodoActivo->fecha_fin))
                             <p class="text-xs text-gray-500 mt-1.5 flex items-center gap-1.5">
                                 <i class="fas fa-calendar-alt" style="color: #5D0A28;"></i>
@@ -162,36 +109,19 @@
                             </p>
                         @endif
 
-                        {{-- Campo oculto con el ID del periodo para enviar al controlador --}}
                         @if(isset($periodoActivo->id))
                             <input type="hidden" name="periodo_id" value="{{ $periodoActivo->id }}">
                         @endif
                     </div>
                 </div>
 
-                {{-- ===============================================
-                    CHECKBOX DE EXCEPCION
-                    Solo se muestra si:
-                    - Existe una evaluacion anterior (no es Evaluacion 1), O
-                    - Estamos en modo excepcion forzado
-
-                    En modo excepcion forzado:
-                    - El checkbox esta marcado y deshabilitado (no se puede desmarcar)
-                    - Se agrega un input hidden para enviar el valor "1" al servidor
-                      (los checkbox deshabilitados no envian datos en HTML)
-
-                    En modo normal:
-                    - El checkbox esta disponible y el estudiante puede marcarlo
-                    - Al marcarlo, se muestra el dropdown con la evaluacion anterior
-                      y la evidencia se vuelve obligatoria (via JavaScript)
-                =============================================== --}}
+                {{-- CHECKBOX DE EXCEPCION --}}
                 @if($evaluacionAnterior || $modoExcepcion)
                 <div class="sm:col-span-2 bg-amber-50 p-4 rounded-lg border border-amber-200">
                     <label class="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" name="es_excepcion" id="check_excepcion" value="1"
                             class="w-5 h-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
                             {{ $modoExcepcion ? 'checked disabled' : '' }}>
-                        {{-- Input hidden necesario porque los checkbox deshabilitados no se envian --}}
                         @if($modoExcepcion)
                             <input type="hidden" name="es_excepcion" value="1">
                         @endif
@@ -207,18 +137,7 @@
                         @endif
                     </p>
 
-                    {{-- ===============================================
-                        DROPDOWN DE EVALUACION ANTERIOR
-                        Muestra la evaluacion para la cual se solicita
-                        la excepcion. Solo tiene una opcion: la evaluacion
-                        inmediatamente anterior a la activa.
-                        Ejemplo: si la activa es "Evaluacion 3",
-                        el dropdown muestra "Evaluación 2".
-
-                        Esta oculto por defecto en modo normal y se
-                        muestra cuando el checkbox se marca (via JS).
-                        En modo excepcion forzado, se muestra siempre.
-                    =============================================== --}}
+                    {{-- DROPDOWN DE EVALUACION ANTERIOR --}}
                     <div id="contenedor_eval_excepcion" class="{{ $modoExcepcion ? '' : 'hidden' }} mt-4 ml-8">
                         <label class="block text-xs font-bold text-amber-800 uppercase mb-1">Evaluación a Corregir</label>
                         <select name="evaluacion_excepcion" id="select_eval_excepcion"
@@ -234,13 +153,7 @@
                 </div>
                 @endif
 
-                {{-- ===============================================
-                    SELECCION DE MATERIA
-                    Lista desplegable con las materias inscritas del
-                    estudiante. Cada opcion tiene atributos data-*
-                    con el docente y la seccion, que se usan en
-                    JavaScript para autocompletar esos campos.
-                =============================================== --}}
+                {{-- SELECCION DE MATERIA --}}
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Materia Sujeta a Corrección</label>
                     <select name="materia_id" id="select_materia"
@@ -260,12 +173,7 @@
                     </select>
                 </div>
 
-                {{-- ===============================================
-                    SECCION Y DOCENTE
-                    Se autocompletar al seleccionar una materia.
-                    Son de solo lectura para el estudiante.
-                    Los valores reales se envian en inputs hidden.
-                =============================================== --}}
+                {{-- SECCION Y DOCENTE --}}
                 <div>
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Sección</label>
                     <input type="text" id="input_seccion_visible"
@@ -284,13 +192,7 @@
                     <input type="hidden" name="docente_id" id="input_docente_id">
                 </div>
 
-                {{-- ===============================================
-                    NOTA A PROPONER
-                    El estudiante ingresa la nota que cree correcta.
-                    Tiene validacion en tiempo real con JavaScript:
-                    si el valor es menor a 0 o mayor a 10, se muestra
-                    un error y se deshabilita el boton de enviar.
-                =============================================== --}}
+                {{-- NOTA A PROPONER --}}
                 <div id="contenedor_nota" class="sm:col-span-2 p-4 rounded-lg border bg-gray-50 border-gray-200 transition-colors duration-300">
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Nota a Proponer (0.0 a 10)</label>
                     <input type="number" step="0.1" min="0.0" max="10"
@@ -304,12 +206,7 @@
                     </p>
                 </div>
 
-                {{-- ===============================================
-                    MOTIVO DEL RECLAMO
-                    Campo de texto donde el estudiante explica
-                    por que solicita la correccion. Es obligatorio
-                    y debe tener al menos 10 caracteres.
-                =============================================== --}}
+                {{-- MOTIVO DEL RECLAMO --}}
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">Motivo del Reclamo</label>
                     <textarea name="motivo" rows="4"
@@ -318,21 +215,7 @@
                         required></textarea>
                 </div>
 
-                {{-- ===============================================
-                    EVIDENCIA (ARCHIVO)
-                    Campo para subir archivos JPG, PNG o PDF (max 5MB).
-
-                    Comportamiento segun el modo:
-                    - MODO NORMAL sin checkbox: Opcional, borde gris
-                    - MODO NORMAL con checkbox marcado: Obligatorio,
-                      borde rojo, texto rojo (cambia via JavaScript)
-                    - MODO EXCEPCION FORZADO: Obligatorio desde el inicio,
-                      borde rojo, atributo required en el HTML
-
-                    El label tiene dos textos que se alternan:
-                    - "Obligatorio para excepciones" (visible si excepcion)
-                    - "Opcional" (visible si solicitud normal)
-                =============================================== --}}
+                {{-- EVIDENCIA (ARCHIVO) --}}
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-bold uppercase mb-1" id="label_evidencia"
                         style="color: {{ $modoExcepcion ? '#dc2626' : '#374151' }};">
@@ -345,7 +228,6 @@
                         </span>
                     </label>
 
-                    {{-- Zona de arrastre y clic para subir archivos --}}
                     <div class="border-2 border-dashed rounded-lg p-6 text-center transition cursor-pointer"
                         id="zona_evidencia"
                         style="border-color: {{ $modoExcepcion ? '#fca5a5' : '#d1d5db' }};">
@@ -356,25 +238,14 @@
                         </p>
                     </div>
 
-                    {{-- Input oculto: se usa solo para abrir el selector de archivos --}}
                     <input type="file" id="input_evidencia_selector" accept=".jpg,.jpeg,.png,.pdf" multiple class="hidden">
-
-                    {{-- Contenedor de inputs reales que se envian con el formulario --}}
                     <div id="contenedor_inputs_evidencia"></div>
-
-                    {{-- Lista visual de archivos agregados --}}
                     <div id="lista_archivos" class="hidden mt-3 space-y-1.5"></div>
                 </div>
 
             </div>
 
-            {{-- ===============================================
-                BOTONES DE ENVIO
-                El texto del boton cambia segun el modo:
-                - Normal: "Enviar Solicitud al Docente"
-                - Excepcion: "Enviar Solicitud de Excepción"
-                El boton se deshabilita si la nota es invalida.
-            =============================================== --}}
+            {{-- BOTONES DE ENVIO --}}
             <div class="mt-8 flex space-x-4">
                 <button type="submit" id="btn_enviar"
                     style="background-color: #5D0A28;"
@@ -392,18 +263,9 @@
 
         </form>
     </div>
+@endsection
 
-    {{-- ===============================================
-        JAVASCRIPT
-        Tres funcionalidades principales:
-        1) Autocompletar seccion y docente al seleccionar materia
-        2) Validar nota en tiempo real (0 a 10)
-        3) Logica del checkbox de excepcion:
-           - Mostrar/ocultar dropdown de evaluacion anterior
-           - Cambiar evidencia a obligatoria/opcional
-           - Cambiar texto y colores del label de evidencia
-           - Cambiar texto del boton de enviar
-    =============================================== --}}
+@section('scripts')
     <script>
         // 1) AUTOCOMPLETAR SECCION Y DOCENTE
         document.getElementById('select_materia').addEventListener('change', function () {
@@ -472,14 +334,7 @@
             });
         }
 
-        // =====================================================
         // 4) GESTOR DE ARCHIVOS DE EVIDENCIA
-        // Permite agregar archivos por clic o arrastrando.
-        // Los archivos se acumulan (no se reemplazan).
-        // Cada archivo se puede eliminar individualmente.
-        // Se crean inputs ocultos por cada archivo para que
-        // el formulario los envie correctamente al servidor.
-        // =====================================================
         var archivosAcumulados = [];
         var zonaEvidencia = document.getElementById('zona_evidencia');
         var inputSelector = document.getElementById('input_evidencia_selector');
@@ -488,18 +343,15 @@
         var extensionesPermitidas = ['jpg', 'jpeg', 'png', 'pdf'];
         var maxTamano = 5 * 1024 * 1024; // 5MB
 
-        // Al hacer clic en la zona, abrir el selector de archivos
         zonaEvidencia.addEventListener('click', function () {
             inputSelector.click();
         });
 
-        // Cuando el usuario selecciona archivos desde el selector
         inputSelector.addEventListener('change', function () {
             agregarArchivos(this.files);
             this.value = '';
         });
 
-        // Drag and drop: resaltar la zona al arrastrar archivos encima
         zonaEvidencia.addEventListener('dragover', function (e) {
             e.preventDefault();
             this.style.borderColor = '#5D0A28';
@@ -513,7 +365,6 @@
             this.style.borderColor = esExcepcion ? '#fca5a5' : '#d1d5db';
         });
 
-        // Al soltar archivos en la zona
         zonaEvidencia.addEventListener('drop', function (e) {
             e.preventDefault();
             this.style.backgroundColor = '';
@@ -524,23 +375,19 @@
             }
         });
 
-        // Agrega archivos nuevos a la lista acumulada
         function agregarArchivos(fileList) {
             for (var i = 0; i < fileList.length; i++) {
                 var archivo = fileList[i];
                 var ext = archivo.name.split('.').pop().toLowerCase();
 
-                // Validar extension
                 if (extensionesPermitidas.indexOf(ext) === -1) {
                     alert('El archivo "' + archivo.name + '" no es un formato permitido. Solo JPG, PNG y PDF.');
                     continue;
                 }
-                // Validar tamano
                 if (archivo.size > maxTamano) {
                     alert('El archivo "' + archivo.name + '" supera los 5MB.');
                     continue;
                 }
-                // Evitar duplicados por nombre
                 var duplicado = false;
                 for (var j = 0; j < archivosAcumulados.length; j++) {
                     if (archivosAcumulados[j].name === archivo.name && archivosAcumulados[j].size === archivo.size) {
@@ -556,14 +403,12 @@
             sincronizarInputs();
         }
 
-        // Elimina un archivo de la lista por su indice
         function eliminarArchivo(indice) {
             archivosAcumulados.splice(indice, 1);
             renderizarLista();
             sincronizarInputs();
         }
 
-        // Dibuja la lista visual de archivos adjuntos
         function renderizarLista() {
             listaDiv.innerHTML = '';
 
@@ -574,7 +419,6 @@
 
             listaDiv.classList.remove('hidden');
 
-            // Encabezado
             var encabezado = document.createElement('div');
             encabezado.className = 'flex items-center justify-between';
             encabezado.innerHTML = '<p class="text-xs font-bold text-gray-600 uppercase tracking-wide flex items-center gap-1.5">' +
@@ -585,7 +429,6 @@
                 '<i class="fas fa-trash-alt mr-1"></i>Quitar todos</button>';
             listaDiv.appendChild(encabezado);
 
-            // Cada archivo
             for (var i = 0; i < archivosAcumulados.length; i++) {
                 var archivo = archivosAcumulados[i];
                 var tamano = (archivo.size / 1024 / 1024).toFixed(2);
@@ -604,15 +447,12 @@
             }
         }
 
-        // Elimina todos los archivos de la lista
         function eliminarTodos() {
             archivosAcumulados = [];
             renderizarLista();
             sincronizarInputs();
         }
 
-        // Crea un input file oculto por cada archivo acumulado
-        // para que el formulario los envie al servidor como evidencias[]
         function sincronizarInputs() {
             contenedorInputs.innerHTML = '';
             for (var i = 0; i < archivosAcumulados.length; i++) {
@@ -627,5 +467,4 @@
             }
         }
     </script>
-</body>
-</html>
+@endsection

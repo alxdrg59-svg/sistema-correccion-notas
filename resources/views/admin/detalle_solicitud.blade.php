@@ -1,34 +1,11 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplicar Corrección — UTEC Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body class="bg-gray-100 min-h-screen pb-12">
+@extends('layouts.app')
 
-    {{-- NAVBAR --}}
-    <nav style="background-color: #5D0A28;" class="p-4 text-white shadow-xl">
-        <div class="container mx-auto flex flex-wrap justify-between items-center gap-2">
-            <div class="flex items-center space-x-3">
-                <i class="fas fa-university text-2xl"></i>
-                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC <span class="hidden sm:inline">— Panel Administrador</span></h1>
-            </div>
-            <div class="flex items-center space-x-3">
-                <span class="bg-white font-bold uppercase px-3 py-1 rounded-full text-xs" style="color: #5D0A28;">Admin</span>
-                <span class="font-medium text-sm hidden sm:inline">{{ Auth::user()->nombre }}</span>
-                <form action="{{ route('logout') }}" method="POST" class="inline">
-                    @csrf
-                    <button type="submit" class="hover:text-red-300 transition" title="Cerrar Sesión">
-                        <i class="fas fa-sign-out-alt text-lg"></i>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </nav>
+@section('title', 'Aplicar Corrección')
+@section('subtitle', 'Panel Administrador')
+@section('rol', 'Admin')
+@section('body-class', 'pb-12')
 
+@section('content')
     <div class="container mx-auto max-w-4xl mt-8 px-4">
 
         {{-- Botón volver --}}
@@ -37,9 +14,7 @@
             <i class="fas fa-arrow-left mr-2"></i> Volver al Panel
         </a>
 
-        {{-- ══════════════════════════════════════════════ --}}
-        {{-- DATOS DE LA SOLICITUD                          --}}
-        {{-- ══════════════════════════════════════════════ --}}
+        {{-- DATOS DE LA SOLICITUD --}}
         <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
             <div class="px-6 py-4 flex flex-wrap items-center justify-between gap-2" style="background-color: #5D0A28;">
                 <h2 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
@@ -98,9 +73,7 @@
             </div>
         </div>
 
-        {{-- ══════════════════════════════════════════════ --}}
-        {{-- DECISIÓN DEL DOCENTE                           --}}
-        {{-- ══════════════════════════════════════════════ --}}
+        {{-- DECISIÓN DEL DOCENTE --}}
         @if($decisionDocente)
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6">
             <p class="text-xs font-bold text-blue-500 uppercase tracking-wider mb-2">
@@ -136,9 +109,7 @@
         </div>
         @endif
 
-        {{-- ══════════════════════════════════════════════ --}}
-        {{-- DECISIÓN DEL COORDINADOR                       --}}
-        {{-- ══════════════════════════════════════════════ --}}
+        {{-- DECISIÓN DEL COORDINADOR --}}
         @if($decisionCoordinador)
         <div class="bg-purple-50 border border-purple-200 rounded-xl p-5 mb-6">
             <p class="text-xs font-bold text-purple-500 uppercase tracking-wider mb-2">
@@ -180,11 +151,7 @@
             @endif
         @endforeach
 
-        {{-- ══════════════════════════════════════════════════════════════ --}}
-        {{-- FORMULARIO DE CORRECCIÓN                                       --}}
-        {{-- Admin ingresa la nota correcta y finaliza — SIN posibilidad    --}}
-        {{-- de editar después. Acción irreversible.                        --}}
-        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- FORMULARIO DE CORRECCIÓN --}}
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
             <div class="px-6 py-4" style="background-color: #5D0A28;">
                 <h2 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
@@ -200,7 +167,7 @@
                 </p>
             </div>
 
-            {{-- Errores de validación --}}
+            {{-- Resultado final si ya fue finalizada --}}
             @if($solicitud->estado === 'finalizado' && $historialNota)
             <div class="p-6">
                 <div class="bg-green-50 border-2 border-green-400 rounded-xl p-6">
@@ -232,14 +199,6 @@
             @endif
 
             @if($solicitud->estado === 'pendiente_admin')
-            @if($errors->any())
-                <div class="mx-6 mt-4 bg-red-50 border-l-4 border-red-500 p-3 rounded">
-                    @foreach($errors->all() as $error)
-                        <p class="text-red-700 text-sm font-medium"><i class="fas fa-exclamation-triangle text-yellow-500"></i> {{ $error }}</p>
-                    @endforeach
-                </div>
-            @endif
-
             <form action="/admin/solicitud/{{ $solicitud->id }}/finalizar"
                 method="POST"
                 enctype="multipart/form-data"
@@ -315,7 +274,9 @@
         </div>
 
     </div>
+@endsection
 
+@section('scripts')
     <script>
         // Gestor de archivos del admin
         var archivosAdmin = [];
@@ -392,6 +353,4 @@
             }
         });
     </script>
-
-</body>
-</html>
+@endsection

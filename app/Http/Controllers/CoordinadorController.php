@@ -52,7 +52,7 @@ class CoordinadorController extends Controller
             ->orderBy('solicitudes_correccion.fecha_solicitud', 'desc')
             ->get();
 
-        return view('dashboard_coordinador', compact('solicitudes', 'facultad'));
+        return view('coordinador.dashboard', compact('solicitudes', 'facultad'));
     }
 
     // =====================================================
@@ -159,7 +159,7 @@ class CoordinadorController extends Controller
             ->where('accion', 'like', '%admin%')
             ->exists();
 
-        return view('detalle_solicitud_coordinador', compact(
+        return view('coordinador.detalle_solicitud', compact(
             'solicitud',
             'decisionDocente',
             'evidenciasDocente',

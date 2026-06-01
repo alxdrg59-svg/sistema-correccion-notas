@@ -48,7 +48,7 @@ class AdminController extends Controller
             'total'       => $solicitudes->count(),
         ];
 
-        return view('dashboard_admin', compact('solicitudes', 'contadores'));
+        return view('admin.dashboard', compact('solicitudes', 'contadores'));
     }
 
     // =====================================================
@@ -145,7 +145,7 @@ class AdminController extends Controller
             ->orderBy('fecha', 'desc')
             ->first();
 
-        return view('detalle_solicitud_admin', compact(
+        return view('admin.detalle_solicitud', compact(
             'solicitud',
             'decisionDocente',
             'decisionCoordinador',
@@ -252,7 +252,7 @@ class AdminController extends Controller
             ->orderBy('id', 'asc')
             ->get();
 
-        return view('gestionar_periodos', compact('periodos', 'ciclos'));
+        return view('admin.gestionar_periodos', compact('periodos', 'ciclos'));
     }
 
     private function autoGenerarCiclos()

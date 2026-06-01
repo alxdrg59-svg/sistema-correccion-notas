@@ -1,80 +1,10 @@
-<!DOCTYPE html>
-<html lang="es">
+@extends('layouts.app')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Estudiante - UTEC</title>
-    {{-- Tailwind via CDN — en producción cambiar por compilado con npm --}}
-    <script src="https://cdn.tailwindcss.com"></script>
-    {{-- FontAwesome para los íconos de la tabla y navbar --}}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
+@section('title', 'Panel Estudiante')
+@section('subtitle', 'Portal Académico')
+@section('rol', 'Estudiante')
 
-<body class="bg-gray-100 min-h-screen">
-
-    {{-- ===================================================
-        NAVBAR
-            Muestra el nombre del usuario, su rol (estudiante) y un botón de logout.
-            El logout se hace con un formulario POST por seguridad (CSRF).
-    =================================================== --}}
-    <nav style="background-color: #5D0A28;" class="p-4 text-white shadow-xl">
-        <div class="container mx-auto flex flex-wrap justify-between items-center gap-2">
-            <div class="flex items-center space-x-3">
-                <i class="fas fa-university text-2xl"></i>
-                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC <span class="hidden sm:inline">— Portal Académico</span></h1>
-            </div>
-            <div class="flex items-center space-x-3">
-                {{-- Badge de rol --}}
-                <span class="bg-white font-bold uppercase px-3 py-1 rounded-full text-xs" style="color: #5D0A28;">
-                    Estudiante
-                </span>
-                {{-- Nombre del usuario desde la sesión --}}
-                <span class="font-medium text-sm hidden sm:inline">
-                    {{ Auth::user()->nombre }}
-                </span>
-                {{-- Logout: usa POST por seguridad (CSRF) --}}
-                <form action="{{ route('logout') }}" method="POST" class="inline">
-                    @csrf
-                    <button type="submit" class="hover:text-red-300 transition-colors duration-200" title="Cerrar Sesión">
-                        <i class="fas fa-sign-out-alt text-lg"></i>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </nav>
-
-    {{-- ===================================================
-        ALERTAS FLASH
-        Se muestran cuando el controlador redirige con
-        ->with('success', ...) o ->with('error', ...)
-        se desvanecen solos a los 3 segundos (ver script)
-    =================================================== --}}
-    <div class="container mx-auto mt-6 px-4">
-
-        @if(session('error'))
-            <div id="alerta-error"
-                class="bg-red-50 border-l-4 border-red-600 text-red-700 p-4 mb-4 rounded-r-lg shadow-md font-medium text-sm flex items-center transition-all duration-500">
-                <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
-                <span>{{ session('error') }}</span>
-            </div>
-        @endif
-
-        @if(session('success'))
-            <div id="alerta-exito"
-                class="bg-green-50 border-l-4 border-green-600 text-green-700 p-4 mb-4 rounded-r-lg shadow-md font-medium text-sm flex items-center transition-all duration-500">
-                <i class="fas fa-check-circle text-green-600 mr-2"></i>
-                <span>{{ session('success') }}</span>
-            </div>
-        @endif
-
-    </div>
-
-    {{-- ===================================================
-        CONTENIDO PRINCIPAL - TABLA DE SOLICITUDES
-        Muestra todas las solicitudes del estudiante logueado
-        con su estado, fecha y enlace a detalles.
-    =================================================== --}}
+@section('content')
     <div class="container mx-auto mt-2 p-4">
 
         {{-- Encabezado + botón de nueva solicitud --}}
@@ -102,11 +32,7 @@
             <button onclick="filtrar('excepcion')" class="filtro-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="excepcion">Excepciones</button>
         </div>
 
-        {{-- ===================================================
-            TABLA DE SOLICITUDES
-            Muestra todas las solicitudes del estudiante logueado
-            con su estado, fecha y enlace a detalles.
-        =================================================== --}}
+        {{-- TABLA DE SOLICITUDES --}}
         <div class="bg-white rounded-xl shadow-md overflow-x-auto">
             <table class="w-full text-left border-collapse min-w-[600px]">
                 <thead class="bg-gray-50 border-b">
@@ -118,7 +44,6 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- @forelse muestra filas si hay datos, o el @empty si la colección está vacía --}}
                     @forelse($solicitudes as $solicitud)
                         @php
                             $categoria = 'pendiente';
@@ -142,15 +67,9 @@
                                 @endif
                             </td>
 
-                            {{-- ===============================================
-                                BADGE DE ESTADO
-                                Mapea el ENUM real de la BD a colores y textos
-                                legibles para el estudiante. Si llega un valor
-                                inesperado cae al estilo gris por defecto (??)
-                            =============================================== --}}
+                            {{-- BADGE DE ESTADO --}}
                             <td class="p-4 text-center">
                                 @php
-                                    // Colores Tailwind por cada valor del ENUM
                                     $clases = [
                                         'pendiente_docente'     => 'bg-orange-100 text-orange-700 border-orange-200',
                                         'rechazado_docente'     => 'bg-red-100    text-red-700    border-red-200',
@@ -159,8 +78,6 @@
                                         'pendiente_admin'       => 'bg-blue-100   text-blue-700   border-blue-200',
                                         'finalizado'            => 'bg-green-100  text-green-700  border-green-200',
                                     ];
-
-                                    // Ícono FontAwesome por estado
                                     $iconos = [
                                         'pendiente_docente'     => 'fa-hourglass-half',
                                         'rechazado_docente'     => 'fa-times-circle',
@@ -169,8 +86,6 @@
                                         'pendiente_admin'       => 'fa-hourglass-half',
                                         'finalizado'            => 'fa-check-circle',
                                     ];
-
-                                    // Texto amigable en lugar del valor crudo del ENUM
                                     $etiquetas = [
                                         'pendiente_docente'     => 'En revisión (Docente)',
                                         'rechazado_docente'     => 'Rechazada',
@@ -179,7 +94,6 @@
                                         'pendiente_admin'       => 'En revisión (Admin)',
                                         'finalizado'            => 'Aprobada y Finalizada',
                                     ];
-
                                     $estadoKey = $solicitud->estado;
                                     $estilo    = $clases[$estadoKey]    ?? 'bg-gray-100 text-gray-500 border-gray-200';
                                     $icono     = $iconos[$estadoKey]    ?? 'fa-circle';
@@ -192,11 +106,7 @@
                                 </span>
                             </td>
 
-                            {{-- ===============================================
-                                FECHA DE SOLICITUD
-                                Formatea la fecha con Carbon para mostrar día/mes/año
-                                y hora. Si no hay fecha (nueva solicitud) muestra "Reciente"
-                            =============================================== --}}
+                            {{-- FECHA DE SOLICITUD --}}
                             <td class="p-4 text-sm text-gray-500 font-medium">
                                 @if($solicitud->fecha_solicitud)
                                     {{ \Carbon\Carbon::parse($solicitud->fecha_solicitud)->format('d/m/Y H:i') }}
@@ -226,7 +136,6 @@
 
                         </tr>
                     @empty
-                        {{-- Mensaje cuando el estudiante no tiene ninguna solicitud aún --}}
                         <tr>
                             <td colspan="4" class="p-12 text-center">
                                 <div class="flex flex-col items-center text-gray-400">
@@ -262,30 +171,10 @@
         </div>
 
     </div>
+@endsection
 
-    {{-- ===================================================
-        SCRIPT: Auto-desvanecimiento de alertas
-            Busca los elementos por ID y aplica una transición de opacidad
-            y movimiento hacia arriba antes de removerlos del DOM. 
-            
-    =================================================== --}}
+@section('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            function desvanecerAlerta(id) {
-                var el = document.getElementById(id);
-                if (!el) return;
-                setTimeout(function () {
-                    el.style.opacity    = '0';
-                    el.style.transform  = 'translateY(-10px)';
-                    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                    setTimeout(function () { el.remove(); }, 500);
-                }, 3000);
-            }
-
-            desvanecerAlerta('alerta-error');
-            desvanecerAlerta('alerta-exito');
-        });
-
         function filtrar(tipo) {
             var filas = document.querySelectorAll('.fila-solicitud');
             filas.forEach(function(fila) {
@@ -311,6 +200,4 @@
         }
         filtrar('todas');
     </script>
-
-</body>
-</html>
+@endsection

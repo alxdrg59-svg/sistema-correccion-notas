@@ -1,34 +1,11 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Revisar Solicitud — UTEC</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body class="bg-gray-100 min-h-screen pb-12">
+@extends('layouts.app')
 
-    {{-- NAVBAR --}}
-    <nav style="background-color: #5D0A28;" class="p-4 text-white shadow-xl">
-        <div class="container mx-auto flex flex-wrap justify-between items-center gap-2">
-            <div class="flex items-center space-x-3">
-                <i class="fas fa-university text-2xl"></i>
-                <h1 class="font-bold text-xl uppercase tracking-wider">UTEC <span class="hidden sm:inline">— Portal Docente</span></h1>
-            </div>
-            <div class="flex items-center space-x-3">
-                <span class="bg-white font-bold uppercase px-3 py-1 rounded-full text-xs" style="color: #5D0A28;">Docente</span>
-                <span class="font-medium text-sm hidden sm:inline">{{ Auth::user()->nombre }}</span>
-                <form action="{{ route('logout') }}" method="POST" class="inline">
-                    @csrf
-                    <button type="submit" class="hover:text-red-300 transition" title="Cerrar Sesión">
-                        <i class="fas fa-sign-out-alt text-lg"></i>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </nav>
+@section('title', 'Revisar Solicitud')
+@section('subtitle', 'Portal Docente')
+@section('rol', 'Docente')
+@section('body-class', 'pb-12')
 
+@section('content')
     <div class="container mx-auto max-w-4xl mt-8 px-4">
 
         {{-- Botón volver --}}
@@ -38,17 +15,7 @@
             <i class="fas fa-arrow-left mr-2"></i> Volver a mi Bandeja
         </a>
 
-        {{-- ===================================================
-            DETALLE DE LA SOLICITUD
-            Se muestra toda la información relevante de la solicitud.
-            En la parte superior se muestra un badge con el estado actual.
-            - Pendiente Docente: Naranja
-            - Rechazado Docente: Rojo
-            - Pendiente Coordinador: Amarillo
-            - Rechazado Coordinador: Rojo
-            - Pendiente Admin: Azul
-            - Finalizado: Verde
-    =================================================== --}}
+        {{-- DETALLE DE LA SOLICITUD --}}
         <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
             <div class="px-6 py-4 flex flex-wrap items-center justify-between gap-2" style="background-color: #5D0A28;">
                 <h2 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
@@ -157,13 +124,7 @@
         </div>
         @endif
 
-        {{-- ===================================================
-            DECISIÓN PREVIA DEL DOCENTE (si existe)
-            Si el docente ya tomó una decisión antes, se muestra aquí para referencia.
-            - Acción tomada (Aprobado/Rechazado)
-            - Comentario o justificación
-            - Fecha de la decisión
-    =================================================== --}}
+        {{-- DECISIÓN PREVIA DEL DOCENTE (si existe) --}}
         @if($decisionDocente)
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6">
             <p class="text-xs font-bold text-blue-500 uppercase tracking-wider mb-2">
@@ -207,13 +168,7 @@
         </div>
         @endif
 
-        {{-- ===================================================
-            FORMULARIO DE DECISIÓN DEL DOCENTE
-            Solo se muestra si el coordinador aún no ha actuado y el estado es pendiente_docente, pendiente_coordinador o rechazado_docente.
-            Permite al docente registrar o editar su decisión (aprobar/rechazar), agregar un comentario y adjuntar evidencia.
-            - Si el coordinador ya actuó, se muestra un mensaje indicando que la edición está bloqueada.
-            - Si el estado no es ninguno de los anteriores, se muestra un mensaje indicando que la solicitud ya fue procesada.
-    =================================================== --}}
+        {{-- FORMULARIO DE DECISIÓN DEL DOCENTE --}}
         @if(!$coordinadorYaActuo && in_array($solicitud->estado, ['pendiente_docente', 'pendiente_coordinador', 'rechazado_docente']))
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
             <div class="px-6 py-4" style="background-color: #5D0A28;">
@@ -222,15 +177,6 @@
                     {{ $decisionDocente ? 'Editar mi Decisión' : 'Registrar Decisión' }}
                 </h2>
             </div>
-
-            {{-- Errores de validación --}}
-            @if($errors->any())
-                <div class="mx-6 mt-4 bg-red-50 border-l-4 border-red-500 p-3 rounded">
-                    @foreach($errors->all() as $error)
-                        <p class="text-red-700 text-sm font-medium">⚠️ {{ $error }}</p>
-                    @endforeach
-                </div>
-            @endif
 
             <form action="/docente/solicitud/{{ $solicitud->id }}/decision"
                 method="POST"
@@ -280,7 +226,7 @@
                 <div id="campo_nota_admin" style="display:none;">
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">
                         Nota sugerida para el Administrador
-                        <span class="text-red-500 ml-1">(Obligatorio al aprobar)</span>  {{-- cambias el span --}}
+                        <span class="text-red-500 ml-1">(Obligatorio al aprobar)</span>
                         </label>
                         <textarea name="nota_sugerida_admin" rows="2"
                             class="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-[#5D0A28] transition text-sm"
@@ -322,9 +268,7 @@
             </form>
         </div>
 
-        {{-- ══════════════════════════════════════════════════════════════ --}}
-        {{-- BLOQUEO: El coordinador ya actuó, no puede editar             --}}
-        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- BLOQUEO: El coordinador ya actuó --}}
         @elseif($coordinadorYaActuo)
         <div class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6 text-center">
             <i class="fas fa-lock text-4xl text-yellow-500 mb-3"></i>
@@ -342,11 +286,9 @@
         @endif
 
     </div>
-    {{-- ===================================================
-        SCRIPTS
-        Aquí se pueden agregar scripts específicos para esta vista, como mostrar el nombre del archivo seleccionado
-        o mostrar una advertencia de comentario obligatorio al seleccionar "Rechazar".
-    =================================================== --}}
+@endsection
+
+@section('scripts')
     <script>
         // Gestor de archivos del docente (clic + drag-and-drop + acumulacion)
         var archivosDocente = [];
@@ -356,29 +298,31 @@
         var contenedorInputsDoc = document.getElementById('contenedor_inputs_docente');
         var extPermitidas = ['jpg', 'jpeg', 'png', 'pdf'];
 
-        zonaDocente.addEventListener('click', function () { inputSelectorDoc.click(); });
+        if (zonaDocente) {
+            zonaDocente.addEventListener('click', function () { inputSelectorDoc.click(); });
 
-        inputSelectorDoc.addEventListener('change', function () {
-            agregarArchivosDoc(this.files);
-            this.value = '';
-        });
+            inputSelectorDoc.addEventListener('change', function () {
+                agregarArchivosDoc(this.files);
+                this.value = '';
+            });
 
-        zonaDocente.addEventListener('dragover', function (e) {
-            e.preventDefault();
-            this.style.borderColor = '#5D0A28';
-            this.style.backgroundColor = '#fff5f7';
-        });
-        zonaDocente.addEventListener('dragleave', function (e) {
-            e.preventDefault();
-            this.style.backgroundColor = '';
-            this.style.borderColor = '#d1d5db';
-        });
-        zonaDocente.addEventListener('drop', function (e) {
-            e.preventDefault();
-            this.style.backgroundColor = '';
-            this.style.borderColor = '#d1d5db';
-            if (e.dataTransfer.files.length > 0) agregarArchivosDoc(e.dataTransfer.files);
-        });
+            zonaDocente.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                this.style.borderColor = '#5D0A28';
+                this.style.backgroundColor = '#fff5f7';
+            });
+            zonaDocente.addEventListener('dragleave', function (e) {
+                e.preventDefault();
+                this.style.backgroundColor = '';
+                this.style.borderColor = '#d1d5db';
+            });
+            zonaDocente.addEventListener('drop', function (e) {
+                e.preventDefault();
+                this.style.backgroundColor = '';
+                this.style.borderColor = '#d1d5db';
+                if (e.dataTransfer.files.length > 0) agregarArchivosDoc(e.dataTransfer.files);
+            });
+        }
 
         function agregarArchivosDoc(fileList) {
             for (var i = 0; i < fileList.length; i++) {
@@ -452,34 +396,35 @@
         var radios = document.querySelectorAll('input[name="decision"]');
         var labelObligatorio = document.getElementById('label_obligatorio');
 
-        radios.forEach(function(radio) {
-            radio.addEventListener('change', function () {
-                if (this.value === 'rechazado') {
-                    labelObligatorio.classList.remove('hidden');
-                    document.getElementById('campo_comentario').placeholder =
-                        'Obligatorio: explica por qué rechazas esta solicitud...';
-                } else {
-                    labelObligatorio.classList.add('hidden');
-                    document.getElementById('campo_comentario').placeholder =
-                        'Escribe tu comentario o justificación aquí...';
-                }
+        if (radios.length && labelObligatorio) {
+            radios.forEach(function(radio) {
+                radio.addEventListener('change', function () {
+                    if (this.value === 'rechazado') {
+                        labelObligatorio.classList.remove('hidden');
+                        document.getElementById('campo_comentario').placeholder =
+                            'Obligatorio: explica por qué rechazas esta solicitud...';
+                    } else {
+                        labelObligatorio.classList.add('hidden');
+                        document.getElementById('campo_comentario').placeholder =
+                            'Escribe tu comentario o justificación aquí...';
+                    }
+                });
             });
-        });
-            // Mostrar/ocultar campo nota_admin según decisión
+        }
+
+        // Mostrar/ocultar campo nota_admin según decisión
         document.querySelectorAll('input[name="decision"]').forEach(function(radio) {
             radio.addEventListener('change', function() {
                 var campo = document.getElementById('campo_nota_admin');
                 campo.style.display = this.value === 'aprobado' ? 'block' : 'none';
+            });
         });
-    });
-    // Si la página se recarga y "Aprobar" está seleccionado, mostrar el campo nota_admin
-    document.addEventListener('DOMContentLoaded', function() {
-        var radioAprobado = document.getElementById('radio_aprobar');
-        if (radioAprobado && radioAprobado.checked) {
-            document.getElementById('campo_nota_admin').style.display = 'block';
-        }
-    });
+        // Si la página se recarga y "Aprobar" está seleccionado, mostrar el campo nota_admin
+        document.addEventListener('DOMContentLoaded', function() {
+            var radioAprobado = document.getElementById('radio_aprobar');
+            if (radioAprobado && radioAprobado.checked) {
+                document.getElementById('campo_nota_admin').style.display = 'block';
+            }
+        });
     </script>
-
-</body>
-</html>
+@endsection
