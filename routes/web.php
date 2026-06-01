@@ -66,6 +66,10 @@ Route::get('/estudiante/solicitud/{id}', [SolicitudController::class, 'verDetall
 Route::get('/estudiante/solicitud/{id}/pdf', [SolicitudController::class, 'exportarPdf'])
     ->middleware(['auth', 'rol:estudiante']);
 
+// Ruta para cancelar una solicitud (solo si esta en pendiente_docente y dentro de las 3 horas)
+Route::post('/estudiante/solicitud/{id}/cancelar', [SolicitudController::class, 'cancelarSolicitud'])
+    ->middleware(['auth', 'rol:estudiante']);
+
 // Ruta para cancelar una solicitud (solo si está en estado pendiente_docente o pendiente_coordinador)
 Route::get('/docente/dashboard', [DocenteController::class, 'index'])
     ->middleware(['auth', 'rol:docente']);

@@ -290,6 +290,63 @@ class SolicitudController extends Controller
     }
 
     // =====================================================
+    // CANCELAR SOLICITUD
+    //
+    // Permite al estudiante cancelar una solicitud que envio
+    // por error. Solo se puede cancelar si:
+    //   1. La solicitud pertenece al estudiante logueado
+    //   2. El estado es 'pendiente_docente' (el docente no ha actuado)
+    //   3. Han pasado menos de 3 horas desde que se creo
+    //
+    // Al cancelar, se eliminan todos los registros relacionados:
+    //   - Evidencias del estudiante (archivos en GCS + registros en BD)
+    //   - La solicitud misma
+    // =====================================================
+    public function cancelarSolicitud($id)
+    {
+        $solicitud = DB::table('solicitudes_correccion')
+            ->where('id', $id)
+            ->where('estudiante_id', Auth::id())
+            ->first();
+
+        if (!$solicitud) {
+            return redirect('/estudiante/dashboard')
+                ->with('error', 'Solicitud no encontrada o no tienes permiso para cancelarla.');
+        }
+
+        // Solo se puede cancelar si aun esta en pendiente_docente
+        if ($solicitud->estado !== 'pendiente_docente') {
+            return redirect('/estudiante/solicitud/' . $id)
+                ->with('error', 'No se puede cancelar esta solicitud porque el docente ya la revisó.');
+        }
+
+        // Verificar que no hayan pasado mas de 3 horas desde la creacion
+        $fechaCreacion = \Carbon\Carbon::parse($solicitud->fecha_solicitud);
+        $horasTranscurridas = $fechaCreacion->diffInMinutes(now());
+
+        if ($horasTranscurridas > 180) {
+            return redirect('/estudiante/solicitud/' . $id)
+                ->with('error', 'No se puede cancelar esta solicitud porque ya pasaron más de 3 horas desde que fue enviada.');
+        }
+
+        // Eliminar evidencias asociadas (archivos en GCS + registros en BD)
+        $evidencias = DB::table('evidencias')
+            ->where('solicitud_id', $id)
+            ->get();
+
+        foreach ($evidencias as $evidencia) {
+            \Illuminate\Support\Facades\Storage::disk('gcs')->delete($evidencia->archivo);
+            DB::table('evidencias')->where('id', $evidencia->id)->delete();
+        }
+
+        // Eliminar la solicitud
+        DB::table('solicitudes_correccion')->where('id', $id)->delete();
+
+        return redirect('/estudiante/dashboard')
+            ->with('success', 'Tu solicitud ha sido cancelada exitosamente.');
+    }
+
+    // =====================================================
     // VER DETALLE: Muestra toda la informacion de una solicitud
     //
     // Solo el estudiante que creo la solicitud puede verla.

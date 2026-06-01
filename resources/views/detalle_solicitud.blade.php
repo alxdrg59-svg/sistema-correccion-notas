@@ -130,9 +130,61 @@
             </div>
         </div>
 
+        {{-- ===============================================
+            BOTON DE CANCELAR SOLICITUD
+            Solo se muestra si la solicitud esta en 'pendiente_docente'
+            y han pasado menos de 3 horas desde que fue enviada.
+            Muestra el tiempo restante para cancelar.
+        =============================================== --}}
+        @if($solicitud->estado === 'pendiente_docente')
+            @php
+                $fechaCreacion = \Carbon\Carbon::parse($solicitud->fecha_solicitud);
+                $fechaLimite = $fechaCreacion->copy()->addHours(3);
+                $puedeCancel = now()->lt($fechaLimite);
+                $minutosRestantes = $puedeCancel ? now()->diffInMinutes($fechaLimite) : 0;
+                $horasR = floor($minutosRestantes / 60);
+                $minsR = $minutosRestantes % 60;
+            @endphp
+
+            @if($puedeCancel)
+            <div class="bg-orange-50 border-2 border-orange-300 rounded-xl p-5 mb-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-bold text-orange-800 flex items-center gap-2">
+                            <i class="fas fa-clock text-orange-500"></i>
+                            Puedes cancelar esta solicitud
+                        </p>
+                        <p class="text-xs text-orange-600 mt-1">
+                            Tiempo restante:
+                            <span class="font-bold">
+                                {{ $horasR > 0 ? $horasR . 'h ' : '' }}{{ $minsR }}min
+                            </span>
+                            — Después de este plazo, la solicitud no podrá ser cancelada.
+                        </p>
+                    </div>
+                    <form action="/estudiante/solicitud/{{ $solicitud->id }}/cancelar" method="POST"
+                        onsubmit="return confirm('¿Estás seguro de que deseas cancelar esta solicitud? Esta acción no se puede deshacer.')">
+                        @csrf
+                        <button type="submit"
+                            class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition inline-flex items-center gap-2 shadow whitespace-nowrap">
+                            <i class="fas fa-times-circle"></i> Cancelar Solicitud
+                        </button>
+                    </form>
+                </div>
+            </div>
+            @else
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
+                <p class="text-xs text-gray-500 flex items-center gap-2">
+                    <i class="fas fa-lock text-gray-400"></i>
+                    El plazo de 3 horas para cancelar esta solicitud ha expirado.
+                </p>
+            </div>
+            @endif
+        @endif
+
             {{-- ===============================================
             RESULTADO FINAL DE LA CORRECCIÓN
-            Solo se muestra si la solicitud está finalizada y hay un historial de nota.                    
+            Solo se muestra si la solicitud está finalizada y hay un historial de nota.
             =============================================== --}}
         @if($solicitud->estado === 'finalizado' && $historialNota)
         <div class="bg-green-50 border-2 border-green-400 rounded-xl shadow-md p-6 mb-6">
