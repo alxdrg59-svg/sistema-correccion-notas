@@ -71,6 +71,26 @@
             Se envia por POST a /estudiante/guardar-solicitud
             con enctype multipart para permitir subir archivos
         =============================================== --}}
+        {{-- Mostrar errores de validacion si los hay --}}
+        @if($errors->any())
+            <div class="bg-red-50 border-l-4 border-red-600 text-red-700 p-4 mb-4 rounded-r-lg shadow-md text-sm">
+                <p class="font-bold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> Por favor corrija los siguientes errores:</p>
+                <ul class="list-disc list-inside">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        {{-- Mostrar mensaje de error del controlador --}}
+        @if(session('error'))
+            <div class="bg-red-50 border-l-4 border-red-600 text-red-700 p-4 mb-4 rounded-r-lg shadow-md font-medium text-sm flex items-center">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
+
         <form action="/estudiante/guardar-solicitud" method="POST" enctype="multipart/form-data"
             class="bg-white shadow-2xl rounded-xl p-8 border-t-8" style="border-color: #5D0A28;">
             @csrf
@@ -357,16 +377,6 @@
                 </a>
             </div>
 
-            {{-- Alerta de error si el controlador redirige con ->with('error', ...) --}}
-            @if(session('error'))
-        <div id="alerta-error"
-            class="container mx-auto max-w-4xl px-4 mt-4">
-                <div class="bg-red-50 border-l-4 border-red-600 text-red-700 p-4 rounded-r-lg shadow-md font-medium text-sm flex items-center">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>
-                    <span>{{ session('error') }}</span>
-            </div>
-        </div>
-            @endif
         </form>
     </div>
 

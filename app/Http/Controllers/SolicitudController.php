@@ -237,20 +237,26 @@ class SolicitudController extends Controller
         // Insertar la solicitud en la base de datos.
         // El estado inicial siempre es 'pendiente_docente' porque
         // el docente es el primero en revisar la solicitud.
-        $solicitudId = DB::table('solicitudes_correccion')->insertGetId([
-            'estudiante_id'   => Auth::id(),
-            'materia_id'      => $request->materia_id,
-            'docente_id'      => $request->docente_id,
-            'seccion'         => $request->seccion,
-            'nota_actual'     => $request->nota_actual,
-            'motivo'          => $request->motivo,
-            'evaluacion'      => $evaluacion,
-            'ciclo_id'        => $periodo->ciclo_id,
-            'ciclo'           => $cicloData->nombre,
-            'estado'          => 'pendiente_docente',
-            'es_excepcion'    => $esExcepcion ? 1 : 0,
-            'fecha_solicitud' => now(),
-        ]);
+        try {
+            $solicitudId = DB::table('solicitudes_correccion')->insertGetId([
+                'estudiante_id'   => Auth::id(),
+                'materia_id'      => $request->materia_id,
+                'docente_id'      => $request->docente_id,
+                'seccion'         => $request->seccion,
+                'nota_actual'     => $request->nota_actual,
+                'motivo'          => $request->motivo,
+                'evaluacion'      => $evaluacion,
+                'ciclo_id'        => $periodo->ciclo_id,
+                'ciclo'           => $cicloData->nombre,
+                'estado'          => 'pendiente_docente',
+                'es_excepcion'    => $esExcepcion ? 1 : 0,
+                'fecha_solicitud' => now(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error al insertar solicitud: ' . $e->getMessage());
+            return redirect('/estudiante/nueva-solicitud')
+                ->with('error', 'Error al guardar la solicitud: ' . $e->getMessage());
+        }
 
         // Si el estudiante subio un archivo de evidencia, guardarlo en
         // Google Cloud Storage (disco 'gcs') y registrarlo en la tabla evidencias
