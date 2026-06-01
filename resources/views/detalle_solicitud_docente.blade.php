@@ -131,27 +131,29 @@
             </div>
         </div>
 
-        {{-- EVIDENCIA DEL ESTUDIANTE --}}
-        @if($evidenciaEstudiante)
+        {{-- EVIDENCIAS DEL ESTUDIANTE --}}
+        @if($evidenciasEstudiante->count())
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6">
             <p class="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">
-                <i class="fas fa-paperclip mr-1"></i> Evidencia adjunta por el Estudiante
+                <i class="fas fa-paperclip mr-1"></i> Evidencia adjunta por el Estudiante ({{ $evidenciasEstudiante->count() }} archivo{{ $evidenciasEstudiante->count() > 1 ? 's' : '' }})
             </p>
-            <div class="flex items-center gap-3 mt-1">
-                <a href="{{ route('evidencia.ver', $evidenciaEstudiante->id) }}" target="_blank"
+            @foreach($evidenciasEstudiante as $evEst)
+            <div class="flex items-center gap-3 mt-2 {{ !$loop->first ? 'border-t border-blue-100 pt-2' : '' }}">
+                <a href="{{ route('evidencia.ver', $evEst->id) }}" target="_blank"
                     style="color: #5D0A28;"
                     class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
                     <i class="fas fa-eye"></i> Ver
                 </a>
-                <a href="{{ route('evidencia.descargar', $evidenciaEstudiante->id) }}"
+                <a href="{{ route('evidencia.descargar', $evEst->id) }}"
                     style="color: #5D0A28;"
                     class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
                     <i class="fas fa-download"></i> Descargar
                 </a>
+                <span class="text-xs text-gray-400">
+                    {{ \Carbon\Carbon::parse($evEst->fecha)->format('d/m/Y H:i') }}
+                </span>
             </div>
-            <p class="text-xs text-gray-400 mt-1.5">
-                Subida el {{ \Carbon\Carbon::parse($evidenciaEstudiante->fecha)->format('d/m/Y H:i') }}
-            </p>
+            @endforeach
         </div>
         @endif
 
@@ -179,32 +181,29 @@
         </div>
         @endif
 
-        {{-- ===================================================
-            EVIDENCIA ADJUNTA
-            Si el docente subió un archivo de evidencia en su revisión, se muestra aquí con un enlace para descargarlo o visualizarlo.
-            - Solo se muestra si existe una evidencia asociada a la decisión del docente.
-            - Se muestra el nombre del archivo y la fecha de subida.
-    =================================================== --}}
-        @if($evidencia)
+        {{-- EVIDENCIAS DEL DOCENTE --}}
+        @if($evidencias->count())
         <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
             <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                <i class="fas fa-paperclip mr-1"></i> Evidencia adjunta
+                <i class="fas fa-paperclip mr-1"></i> Tu evidencia adjunta ({{ $evidencias->count() }} archivo{{ $evidencias->count() > 1 ? 's' : '' }})
             </p>
-            <div class="flex items-center gap-3 mt-1">
-                <a href="{{ route('evidencia.ver', $evidencia->id) }}" target="_blank"
+            @foreach($evidencias as $evDoc)
+            <div class="flex items-center gap-3 mt-2 {{ !$loop->first ? 'border-t border-gray-100 pt-2' : '' }}">
+                <a href="{{ route('evidencia.ver', $evDoc->id) }}" target="_blank"
                     style="color: #5D0A28;"
                     class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
                     <i class="fas fa-eye"></i> Ver
                 </a>
-                <a href="{{ route('evidencia.descargar', $evidencia->id) }}"
+                <a href="{{ route('evidencia.descargar', $evDoc->id) }}"
                     style="color: #5D0A28;"
                     class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
                     <i class="fas fa-download"></i> Descargar
                 </a>
+                <span class="text-xs text-gray-400">
+                    {{ \Carbon\Carbon::parse($evDoc->fecha)->format('d/m/Y H:i') }}
+                </span>
             </div>
-            <p class="text-xs text-gray-400 mt-1.5">
-                Subida el {{ \Carbon\Carbon::parse($evidencia->fecha)->format('d/m/Y H:i') }}
-            </p>
+            @endforeach
         </div>
         @endif
 
@@ -288,21 +287,21 @@
                             placeholder="Ej: La nota correcta es 8.5,">{{ old('nota_sugerida_admin') }}</textarea>
                     </div>
 
-                {{-- Evidencia --}}
+                {{-- Evidencia (multiples archivos) --}}
                 <div>
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">
                         Adjuntar Evidencia
-                        <span class="text-gray-400 font-normal normal-case ml-1">(Opcional — JPG, PNG, PDF — máx. 5MB)</span>
+                        <span class="text-gray-400 font-normal normal-case ml-1">(Opcional — JPG, PNG, PDF — máx. 5MB por archivo)</span>
                     </label>
                     <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#5D0A28] transition cursor-pointer"
                         onclick="document.getElementById('input_archivo').click()">
                         <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                        <p class="text-sm text-gray-500">Haz clic para seleccionar un archivo</p>
+                        <p class="text-sm text-gray-500">Haz clic para seleccionar archivos</p>
                         <p id="nombre_archivo" class="text-xs text-gray-400 mt-1 italic">Ningún archivo seleccionado</p>
                     </div>
-                    <input type="file" name="evidencia" id="input_archivo"
+                    <input type="file" name="evidencias[]" id="input_archivo"
                         accept=".jpg,.jpeg,.png,.pdf"
-                        class="hidden">
+                        class="hidden" multiple>
                 </div>
 
                 {{-- Botón enviar --}}
@@ -349,10 +348,15 @@
         o mostrar una advertencia de comentario obligatorio al seleccionar "Rechazar".
     =================================================== --}}
     <script>
-        // Mostrar nombre del archivo seleccionado
+        // Mostrar nombres de los archivos seleccionados
         document.getElementById('input_archivo').addEventListener('change', function () {
-            var nombre = this.files[0] ? this.files[0].name : 'Ningún archivo seleccionado';
-            document.getElementById('nombre_archivo').textContent = nombre;
+            var nombres = [];
+            for (var i = 0; i < this.files.length; i++) {
+                nombres.push(this.files[i].name);
+            }
+            document.getElementById('nombre_archivo').textContent = nombres.length > 0
+                ? nombres.join(', ')
+                : 'Ningún archivo seleccionado';
         });
 
         // Mostrar advertencia de comentario obligatorio al seleccionar "Rechazar"

@@ -344,12 +344,12 @@
                             (Opcional)
                         </span>
                     </label>
-                    <input type="file" name="evidencia" id="input_evidencia" accept=".jpg,.jpeg,.png,.pdf"
+                    <input type="file" name="evidencias[]" id="input_evidencia" accept=".jpg,.jpeg,.png,.pdf" multiple
                         class="w-full p-2 border-2 rounded-lg bg-white text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold transition"
                         style="border-color: {{ $modoExcepcion ? '#fca5a5' : '#e5e7eb' }};"
                         {{ $modoExcepcion ? 'required' : '' }}>
                     <p class="text-xs mt-1" style="color: {{ $modoExcepcion ? '#ef4444' : '#6b7280' }};" id="texto_formato_evidencia">
-                        Formatos: JPG, PNG, PDF — Maximo 5MB
+                        Formatos: JPG, PNG, PDF — Maximo 5MB por archivo — Puede seleccionar varios archivos
                     </p>
                 </div>
 

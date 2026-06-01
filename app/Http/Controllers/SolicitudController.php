@@ -175,9 +175,9 @@ class SolicitudController extends Controller
             'periodo_id'  => 'required|integer',
             'motivo'      => 'required|string|min:10',
             // La evidencia es obligatoria para excepciones, opcional para normales
-            'evidencia'   => $esExcepcion
-                ? 'required|file|mimes:jpg,jpeg,png,pdf|max:5120'
-                : 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            // Se usa evidencias.* para validar cada archivo individualmente
+            'evidencias'   => $esExcepcion ? 'required|array' : 'nullable|array',
+            'evidencias.*' => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
         ];
 
         // Si es excepcion, tambien validar que se haya seleccionado una evaluacion
@@ -187,7 +187,9 @@ class SolicitudController extends Controller
 
         // Validar con mensajes personalizados
         $request->validate($rules, [
-            'evidencia.required' => 'La evidencia es obligatoria para solicitudes de excepción.',
+            'evidencias.required' => 'La evidencia es obligatoria para solicitudes de excepción.',
+            'evidencias.*.mimes'  => 'Solo se permiten archivos JPG, PNG o PDF.',
+            'evidencias.*.max'    => 'Cada archivo no puede superar los 5MB.',
         ]);
 
         // Buscar el periodo en la base de datos para obtener su ciclo_id
@@ -258,20 +260,24 @@ class SolicitudController extends Controller
                 ->with('error', 'Error al guardar la solicitud: ' . $e->getMessage());
         }
 
-        // Si el estudiante subio un archivo de evidencia, guardarlo en
+        // Si el estudiante subio archivos de evidencia, guardar cada uno en
         // Google Cloud Storage (disco 'gcs') y registrarlo en la tabla evidencias
-        if ($request->hasFile('evidencia') && $request->file('evidencia')->isValid()) {
-            $extension = $request->file('evidencia')->getClientOriginalExtension();
-            $nombreArchivo = 'evidencia_estudiante_' . $solicitudId . '_' . time() . '.' . $extension;
-            $rutaArchivo = $request->file('evidencia')->storeAs('evidencias', $nombreArchivo, 'gcs');
+        if ($request->hasFile('evidencias')) {
+            foreach ($request->file('evidencias') as $index => $archivo) {
+                if ($archivo->isValid()) {
+                    $extension = $archivo->getClientOriginalExtension();
+                    $nombreArchivo = 'evidencia_estudiante_' . $solicitudId . '_' . time() . '_' . $index . '.' . $extension;
+                    $rutaArchivo = $archivo->storeAs('evidencias', $nombreArchivo, 'gcs');
 
-            DB::table('evidencias')->insert([
-                'solicitud_id' => $solicitudId,
-                'usuario_id'   => Auth::id(),
-                'archivo'      => $rutaArchivo,
-                'descripcion'  => 'Evidencia adjuntada por estudiante',
-                'fecha'        => now(),
-            ]);
+                    DB::table('evidencias')->insert([
+                        'solicitud_id' => $solicitudId,
+                        'usuario_id'   => Auth::id(),
+                        'archivo'      => $rutaArchivo,
+                        'descripcion'  => 'Evidencia adjuntada por estudiante',
+                        'fecha'        => now(),
+                    ]);
+                }
+            }
         }
 
         // Mensaje de exito personalizado segun el tipo de solicitud

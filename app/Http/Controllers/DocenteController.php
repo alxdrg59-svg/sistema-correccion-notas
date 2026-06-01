@@ -121,26 +121,26 @@ class DocenteController extends Controller
             )
             ->first();
 
-        // Buscar evidencia que haya subido el docente (si existe)
-        $evidencia = DB::table('evidencias')
+        // Buscar todas las evidencias que haya subido el docente
+        $evidencias = DB::table('evidencias')
             ->where('solicitud_id', $id)
             ->where('usuario_id', Auth::id())
             ->orderBy('fecha', 'desc')
-            ->first();
+            ->get();
 
-        // Buscar evidencia que haya subido el estudiante (si existe)
-        $evidenciaEstudiante = DB::table('evidencias')
+        // Buscar todas las evidencias que haya subido el estudiante
+        $evidenciasEstudiante = DB::table('evidencias')
             ->where('solicitud_id', $id)
             ->where('descripcion', 'like', '%estudiante%')
             ->orderBy('fecha', 'desc')
-            ->first();
+            ->get();
 
         return view('detalle_solicitud_docente', compact(
             'solicitud',
             'coordinadorYaActuo',
             'decisionDocente',
-            'evidencia',
-            'evidenciaEstudiante'
+            'evidencias',
+            'evidenciasEstudiante'
         ));
     }
 
@@ -200,7 +200,8 @@ class DocenteController extends Controller
             'nota_sugerida_admin' => $request->decision === 'aprobado'
                                     ? 'required|string|min:1|max:500'
                                     : 'nullable|string|max:500',
-            'evidencia'           => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'evidencias'          => 'nullable|array',
+            'evidencias.*'        => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
         ];
 
         // Si rechaza, el comentario pasa a ser obligatorio
@@ -213,40 +214,39 @@ class DocenteController extends Controller
             'comentario.min'      => 'La justificación debe tener al menos 10 caracteres.',
             'nota_sugerida_admin.required'   => 'Debes indicar la nota sugerida para el administrador.',
             'nota_sugerida_admin.min'      => 'La nota sugerida debe tener al menos 1 caracter.',
-            'evidencia.mimes'     => 'Solo se permiten archivos JPG, PNG o PDF.',
-            'evidencia.max'       => 'El archivo no puede superar los 5MB.',
+            'evidencias.*.mimes'  => 'Solo se permiten archivos JPG, PNG o PDF.',
+            'evidencias.*.max'    => 'Cada archivo no puede superar los 5MB.',
         ]);
 
-        // Si el docente esta editando su decision, borrar la evidencia anterior
-        // para evitar que se acumulen archivos viejos en el storage
-        $evidenciaPrevia = DB::table('evidencias')
+        // Si el docente esta editando su decision, borrar todas las evidencias
+        // anteriores para evitar que se acumulen archivos viejos en el storage
+        $evidenciasPrevias = DB::table('evidencias')
             ->where('solicitud_id', $id)
             ->where('usuario_id', Auth::id())
-            ->first();
+            ->get();
 
-        if ($evidenciaPrevia) {
-            // Borrar el archivo del almacenamiento en Google Cloud Storage
+        foreach ($evidenciasPrevias as $evidenciaPrevia) {
             Storage::disk('gcs')->delete($evidenciaPrevia->archivo);
-            // Borrar el registro de la base de datos
             DB::table('evidencias')->where('id', $evidenciaPrevia->id)->delete();
         }
 
-        // Si el docente subio un nuevo archivo de evidencia, guardarlo
-        $rutaArchivo = null;
-        if ($request->hasFile('evidencia') && $request->file('evidencia')->isValid()) {
-            $extension   = $request->file('evidencia')->getClientOriginalExtension();
-            $nombreArchivo = 'evidencia_docente_' . $id . '_' . time() . '.' . $extension;
-            // Guardar en Google Cloud Storage (disco 'gcs')
-            $rutaArchivo   = $request->file('evidencia')->storeAs('evidencias', $nombreArchivo, 'gcs');
+        // Si el docente subio nuevos archivos de evidencia, guardar cada uno
+        if ($request->hasFile('evidencias')) {
+            foreach ($request->file('evidencias') as $index => $archivo) {
+                if ($archivo->isValid()) {
+                    $extension   = $archivo->getClientOriginalExtension();
+                    $nombreArchivo = 'evidencia_docente_' . $id . '_' . time() . '_' . $index . '.' . $extension;
+                    $rutaArchivo   = $archivo->storeAs('evidencias', $nombreArchivo, 'gcs');
 
-            // Registrar en la tabla de evidencias
-            DB::table('evidencias')->insert([
-                'solicitud_id' => $id,
-                'usuario_id'   => Auth::id(),
-                'archivo'      => $rutaArchivo,
-                'descripcion'  => 'Evidencia adjuntada por docente',
-                'fecha'        => now(),
-            ]);
+                    DB::table('evidencias')->insert([
+                        'solicitud_id' => $id,
+                        'usuario_id'   => Auth::id(),
+                        'archivo'      => $rutaArchivo,
+                        'descripcion'  => 'Evidencia adjuntada por docente',
+                        'fecha'        => now(),
+                    ]);
+                }
+            }
         }
 
         // Definir el nuevo estado y el texto de la accion segun la decision
