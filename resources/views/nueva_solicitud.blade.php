@@ -344,21 +344,25 @@
                             (Opcional)
                         </span>
                     </label>
-                    <div class="border-2 border-dashed rounded-lg p-6 text-center transition cursor-pointer hover:border-[#5D0A28]"
+
+                    {{-- Zona de arrastre y clic para subir archivos --}}
+                    <div class="border-2 border-dashed rounded-lg p-6 text-center transition cursor-pointer"
                         id="zona_evidencia"
-                        style="border-color: {{ $modoExcepcion ? '#fca5a5' : '#d1d5db' }};"
-                        onclick="document.getElementById('input_evidencia').click()">
-                        <i class="fas fa-cloud-upload-alt text-3xl mb-2" style="color: {{ $modoExcepcion ? '#f87171' : '#9ca3af' }};"></i>
-                        <p class="text-sm text-gray-500">Haz clic para seleccionar archivos</p>
-                        <p class="text-xs text-gray-400 mt-1 italic" id="texto_formato_evidencia">
-                            Formatos: JPG, PNG, PDF — Máximo 5MB por archivo
+                        style="border-color: {{ $modoExcepcion ? '#fca5a5' : '#d1d5db' }};">
+                        <i class="fas fa-cloud-upload-alt text-3xl mb-2" id="icono_evidencia" style="color: {{ $modoExcepcion ? '#f87171' : '#9ca3af' }};"></i>
+                        <p class="text-sm text-gray-500">Haz clic o arrastra archivos aquí</p>
+                        <p class="text-xs text-gray-400 mt-1 italic">
+                            Formatos: JPG, PNG, PDF — Máximo 5MB por archivo — Puede agregar varios
                         </p>
                     </div>
-                    <input type="file" name="evidencias[]" id="input_evidencia" accept=".jpg,.jpeg,.png,.pdf" multiple
-                        class="hidden"
-                        {{ $modoExcepcion ? 'required' : '' }}>
 
-                    {{-- Lista de archivos seleccionados (se llena con JavaScript) --}}
+                    {{-- Input oculto: se usa solo para abrir el selector de archivos --}}
+                    <input type="file" id="input_evidencia_selector" accept=".jpg,.jpeg,.png,.pdf" multiple class="hidden">
+
+                    {{-- Contenedor de inputs reales que se envian con el formulario --}}
+                    <div id="contenedor_inputs_evidencia"></div>
+
+                    {{-- Lista visual de archivos agregados --}}
                     <div id="lista_archivos" class="hidden mt-3 space-y-1.5"></div>
                 </div>
 
@@ -402,24 +406,15 @@
     =============================================== --}}
     <script>
         // 1) AUTOCOMPLETAR SECCION Y DOCENTE
-        // Al seleccionar una materia, lee los atributos data-* de la opcion
-        // y los coloca en los campos de seccion y docente
         document.getElementById('select_materia').addEventListener('change', function () {
             var opcion     = this.options[this.selectedIndex];
-            var docNombre  = opcion.getAttribute('data-docente');
-            var docId      = opcion.getAttribute('data-docente-id');
-            var seccion    = opcion.getAttribute('data-seccion');
-
-            document.getElementById('input_seccion_visible').value = seccion    || '';
-            document.getElementById('input_seccion_hidden').value  = seccion    || '';
-            document.getElementById('input_docente_nombre').value  = docNombre  || '';
-            document.getElementById('input_docente_id').value      = docId      || '';
+            document.getElementById('input_seccion_visible').value = opcion.getAttribute('data-seccion')    || '';
+            document.getElementById('input_seccion_hidden').value  = opcion.getAttribute('data-seccion')    || '';
+            document.getElementById('input_docente_nombre').value  = opcion.getAttribute('data-docente')    || '';
+            document.getElementById('input_docente_id').value      = opcion.getAttribute('data-docente-id') || '';
         });
 
         // 2) VALIDACION DE NOTA EN TIEMPO REAL
-        // Si la nota es mayor a 10, menor a 0 o no es un numero,
-        // muestra el error y deshabilita el boton de enviar.
-        // Si es valida, oculta el error y habilita el boton.
         document.getElementById('input_nota').addEventListener('input', function () {
             var valor      = parseFloat(this.value);
             var btnSubmit  = document.getElementById('btn_enviar');
@@ -450,25 +445,25 @@
         if (checkExcepcion && !checkExcepcion.disabled) {
             checkExcepcion.addEventListener('change', function () {
                 var contenedorEval = document.getElementById('contenedor_eval_excepcion');
-                var inputEvidencia = document.getElementById('input_evidencia');
+                var zonaEvidencia = document.getElementById('zona_evidencia');
                 var textoObligatorio = document.getElementById('texto_evidencia_obligatoria');
                 var textoOpcional = document.getElementById('texto_evidencia_opcional');
                 var labelEvidencia = document.getElementById('label_evidencia');
-                var zonaEvidencia = document.getElementById('zona_evidencia');
                 var textoBtn = document.getElementById('texto_btn_enviar');
+                var iconoEv = document.getElementById('icono_evidencia');
 
                 if (this.checked) {
                     contenedorEval.classList.remove('hidden');
-                    inputEvidencia.required = true;
                     zonaEvidencia.style.borderColor = '#fca5a5';
+                    iconoEv.style.color = '#f87171';
                     textoObligatorio.classList.remove('hidden');
                     textoOpcional.classList.add('hidden');
                     labelEvidencia.style.color = '#dc2626';
                     textoBtn.textContent = 'Enviar Solicitud de Excepción';
                 } else {
                     contenedorEval.classList.add('hidden');
-                    inputEvidencia.required = false;
                     zonaEvidencia.style.borderColor = '#d1d5db';
+                    iconoEv.style.color = '#9ca3af';
                     textoObligatorio.classList.add('hidden');
                     textoOpcional.classList.remove('hidden');
                     labelEvidencia.style.color = '#374151';
@@ -477,43 +472,160 @@
             });
         }
 
-        // 4) MOSTRAR LISTA DE ARCHIVOS SELECCIONADOS
-        // Cuando el usuario selecciona archivos, se muestra una lista
-        // con el nombre, tipo y tamano de cada archivo adjunto
-        document.getElementById('input_evidencia').addEventListener('change', function () {
-            var listaDiv = document.getElementById('lista_archivos');
+        // =====================================================
+        // 4) GESTOR DE ARCHIVOS DE EVIDENCIA
+        // Permite agregar archivos por clic o arrastrando.
+        // Los archivos se acumulan (no se reemplazan).
+        // Cada archivo se puede eliminar individualmente.
+        // Se crean inputs ocultos por cada archivo para que
+        // el formulario los envie correctamente al servidor.
+        // =====================================================
+        var archivosAcumulados = [];
+        var zonaEvidencia = document.getElementById('zona_evidencia');
+        var inputSelector = document.getElementById('input_evidencia_selector');
+        var listaDiv = document.getElementById('lista_archivos');
+        var contenedorInputs = document.getElementById('contenedor_inputs_evidencia');
+        var extensionesPermitidas = ['jpg', 'jpeg', 'png', 'pdf'];
+        var maxTamano = 5 * 1024 * 1024; // 5MB
+
+        // Al hacer clic en la zona, abrir el selector de archivos
+        zonaEvidencia.addEventListener('click', function () {
+            inputSelector.click();
+        });
+
+        // Cuando el usuario selecciona archivos desde el selector
+        inputSelector.addEventListener('change', function () {
+            agregarArchivos(this.files);
+            this.value = '';
+        });
+
+        // Drag and drop: resaltar la zona al arrastrar archivos encima
+        zonaEvidencia.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            this.style.borderColor = '#5D0A28';
+            this.style.backgroundColor = '#fff5f7';
+        });
+
+        zonaEvidencia.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            this.style.backgroundColor = '';
+            var esExcepcion = checkExcepcion && checkExcepcion.checked;
+            this.style.borderColor = esExcepcion ? '#fca5a5' : '#d1d5db';
+        });
+
+        // Al soltar archivos en la zona
+        zonaEvidencia.addEventListener('drop', function (e) {
+            e.preventDefault();
+            this.style.backgroundColor = '';
+            var esExcepcion = checkExcepcion && checkExcepcion.checked;
+            this.style.borderColor = esExcepcion ? '#fca5a5' : '#d1d5db';
+            if (e.dataTransfer.files.length > 0) {
+                agregarArchivos(e.dataTransfer.files);
+            }
+        });
+
+        // Agrega archivos nuevos a la lista acumulada
+        function agregarArchivos(fileList) {
+            for (var i = 0; i < fileList.length; i++) {
+                var archivo = fileList[i];
+                var ext = archivo.name.split('.').pop().toLowerCase();
+
+                // Validar extension
+                if (extensionesPermitidas.indexOf(ext) === -1) {
+                    alert('El archivo "' + archivo.name + '" no es un formato permitido. Solo JPG, PNG y PDF.');
+                    continue;
+                }
+                // Validar tamano
+                if (archivo.size > maxTamano) {
+                    alert('El archivo "' + archivo.name + '" supera los 5MB.');
+                    continue;
+                }
+                // Evitar duplicados por nombre
+                var duplicado = false;
+                for (var j = 0; j < archivosAcumulados.length; j++) {
+                    if (archivosAcumulados[j].name === archivo.name && archivosAcumulados[j].size === archivo.size) {
+                        duplicado = true;
+                        break;
+                    }
+                }
+                if (!duplicado) {
+                    archivosAcumulados.push(archivo);
+                }
+            }
+            renderizarLista();
+            sincronizarInputs();
+        }
+
+        // Elimina un archivo de la lista por su indice
+        function eliminarArchivo(indice) {
+            archivosAcumulados.splice(indice, 1);
+            renderizarLista();
+            sincronizarInputs();
+        }
+
+        // Dibuja la lista visual de archivos adjuntos
+        function renderizarLista() {
             listaDiv.innerHTML = '';
 
-            if (this.files.length === 0) {
+            if (archivosAcumulados.length === 0) {
                 listaDiv.classList.add('hidden');
                 return;
             }
 
             listaDiv.classList.remove('hidden');
 
-            // Encabezado con la cantidad de archivos
-            var encabezado = document.createElement('p');
-            encabezado.className = 'text-xs font-bold text-gray-600 uppercase tracking-wide flex items-center gap-1.5';
-            encabezado.innerHTML = '<i class="fas fa-paperclip"></i> ' + this.files.length + ' archivo' + (this.files.length > 1 ? 's' : '') + ' seleccionado' + (this.files.length > 1 ? 's' : '');
+            // Encabezado
+            var encabezado = document.createElement('div');
+            encabezado.className = 'flex items-center justify-between';
+            encabezado.innerHTML = '<p class="text-xs font-bold text-gray-600 uppercase tracking-wide flex items-center gap-1.5">' +
+                '<i class="fas fa-paperclip"></i> ' + archivosAcumulados.length +
+                ' archivo' + (archivosAcumulados.length > 1 ? 's' : '') +
+                ' adjunto' + (archivosAcumulados.length > 1 ? 's' : '') + '</p>' +
+                '<button type="button" onclick="eliminarTodos()" class="text-xs text-red-500 hover:text-red-700 font-bold">' +
+                '<i class="fas fa-trash-alt mr-1"></i>Quitar todos</button>';
             listaDiv.appendChild(encabezado);
 
-            for (var i = 0; i < this.files.length; i++) {
-                var archivo = this.files[i];
+            // Cada archivo
+            for (var i = 0; i < archivosAcumulados.length; i++) {
+                var archivo = archivosAcumulados[i];
                 var tamano = (archivo.size / 1024 / 1024).toFixed(2);
                 var extension = archivo.name.split('.').pop().toUpperCase();
-
-                // Icono segun el tipo de archivo
                 var icono = extension === 'PDF' ? 'fa-file-pdf text-red-500' : 'fa-file-image text-blue-500';
 
                 var fila = document.createElement('div');
                 fila.className = 'flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm';
-                fila.innerHTML = '<i class="fas ' + icono + '"></i>' +
+                fila.innerHTML = '<i class="fas ' + icono + ' text-lg"></i>' +
                     '<span class="font-medium text-gray-700 truncate flex-1">' + archivo.name + '</span>' +
                     '<span class="text-xs text-gray-400 font-mono whitespace-nowrap">' + tamano + ' MB</span>' +
-                    '<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">' + extension + '</span>';
+                    '<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">' + extension + '</span>' +
+                    '<button type="button" onclick="eliminarArchivo(' + i + ')" class="text-red-400 hover:text-red-600 ml-1" title="Quitar archivo">' +
+                    '<i class="fas fa-times-circle"></i></button>';
                 listaDiv.appendChild(fila);
             }
-        });
+        }
+
+        // Elimina todos los archivos de la lista
+        function eliminarTodos() {
+            archivosAcumulados = [];
+            renderizarLista();
+            sincronizarInputs();
+        }
+
+        // Crea un input file oculto por cada archivo acumulado
+        // para que el formulario los envie al servidor como evidencias[]
+        function sincronizarInputs() {
+            contenedorInputs.innerHTML = '';
+            for (var i = 0; i < archivosAcumulados.length; i++) {
+                var dt = new DataTransfer();
+                dt.items.add(archivosAcumulados[i]);
+                var input = document.createElement('input');
+                input.type = 'file';
+                input.name = 'evidencias[]';
+                input.files = dt.files;
+                input.style.display = 'none';
+                contenedorInputs.appendChild(input);
+            }
+        }
     </script>
 </body>
 </html>

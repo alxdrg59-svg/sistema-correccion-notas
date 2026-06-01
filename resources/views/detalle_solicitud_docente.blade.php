@@ -287,21 +287,20 @@
                             placeholder="Ej: La nota correcta es 8.5,">{{ old('nota_sugerida_admin') }}</textarea>
                     </div>
 
-                {{-- Evidencia (multiples archivos) --}}
+                {{-- Evidencia (multiples archivos con drag-and-drop) --}}
                 <div>
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">
                         Adjuntar Evidencia
                         <span class="text-gray-400 font-normal normal-case ml-1">(Opcional — JPG, PNG, PDF — máx. 5MB por archivo)</span>
                     </label>
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#5D0A28] transition cursor-pointer"
-                        onclick="document.getElementById('input_archivo').click()">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition cursor-pointer"
+                        id="zona_evidencia_docente">
                         <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                        <p class="text-sm text-gray-500">Haz clic para seleccionar archivos</p>
-                        <p class="text-xs text-gray-400 mt-1 italic">Formatos: JPG, PNG, PDF — Máximo 5MB por archivo</p>
+                        <p class="text-sm text-gray-500">Haz clic o arrastra archivos aquí</p>
+                        <p class="text-xs text-gray-400 mt-1 italic">Puede agregar varios archivos</p>
                     </div>
-                    <input type="file" name="evidencias[]" id="input_archivo"
-                        accept=".jpg,.jpeg,.png,.pdf"
-                        class="hidden" multiple>
+                    <input type="file" id="input_selector_docente" accept=".jpg,.jpeg,.png,.pdf" multiple class="hidden">
+                    <div id="contenedor_inputs_docente"></div>
                     <div id="lista_archivos_docente" class="hidden mt-3 space-y-1.5"></div>
                 </div>
 
@@ -349,38 +348,105 @@
         o mostrar una advertencia de comentario obligatorio al seleccionar "Rechazar".
     =================================================== --}}
     <script>
-        // Mostrar lista de archivos seleccionados por el docente
-        document.getElementById('input_archivo').addEventListener('change', function () {
-            var listaDiv = document.getElementById('lista_archivos_docente');
-            listaDiv.innerHTML = '';
+        // Gestor de archivos del docente (clic + drag-and-drop + acumulacion)
+        var archivosDocente = [];
+        var zonaDocente = document.getElementById('zona_evidencia_docente');
+        var inputSelectorDoc = document.getElementById('input_selector_docente');
+        var listaDivDoc = document.getElementById('lista_archivos_docente');
+        var contenedorInputsDoc = document.getElementById('contenedor_inputs_docente');
+        var extPermitidas = ['jpg', 'jpeg', 'png', 'pdf'];
 
-            if (this.files.length === 0) {
-                listaDiv.classList.add('hidden');
-                return;
-            }
+        zonaDocente.addEventListener('click', function () { inputSelectorDoc.click(); });
 
-            listaDiv.classList.remove('hidden');
-
-            var encabezado = document.createElement('p');
-            encabezado.className = 'text-xs font-bold text-gray-600 uppercase tracking-wide flex items-center gap-1.5';
-            encabezado.innerHTML = '<i class="fas fa-paperclip"></i> ' + this.files.length + ' archivo' + (this.files.length > 1 ? 's' : '') + ' seleccionado' + (this.files.length > 1 ? 's' : '');
-            listaDiv.appendChild(encabezado);
-
-            for (var i = 0; i < this.files.length; i++) {
-                var archivo = this.files[i];
-                var tamano = (archivo.size / 1024 / 1024).toFixed(2);
-                var extension = archivo.name.split('.').pop().toUpperCase();
-                var icono = extension === 'PDF' ? 'fa-file-pdf text-red-500' : 'fa-file-image text-blue-500';
-
-                var fila = document.createElement('div');
-                fila.className = 'flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm';
-                fila.innerHTML = '<i class="fas ' + icono + '"></i>' +
-                    '<span class="font-medium text-gray-700 truncate flex-1">' + archivo.name + '</span>' +
-                    '<span class="text-xs text-gray-400 font-mono whitespace-nowrap">' + tamano + ' MB</span>' +
-                    '<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">' + extension + '</span>';
-                listaDiv.appendChild(fila);
-            }
+        inputSelectorDoc.addEventListener('change', function () {
+            agregarArchivosDoc(this.files);
+            this.value = '';
         });
+
+        zonaDocente.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            this.style.borderColor = '#5D0A28';
+            this.style.backgroundColor = '#fff5f7';
+        });
+        zonaDocente.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            this.style.backgroundColor = '';
+            this.style.borderColor = '#d1d5db';
+        });
+        zonaDocente.addEventListener('drop', function (e) {
+            e.preventDefault();
+            this.style.backgroundColor = '';
+            this.style.borderColor = '#d1d5db';
+            if (e.dataTransfer.files.length > 0) agregarArchivosDoc(e.dataTransfer.files);
+        });
+
+        function agregarArchivosDoc(fileList) {
+            for (var i = 0; i < fileList.length; i++) {
+                var archivo = fileList[i];
+                var ext = archivo.name.split('.').pop().toLowerCase();
+                if (extPermitidas.indexOf(ext) === -1) { alert('"' + archivo.name + '" no es un formato permitido.'); continue; }
+                if (archivo.size > 5 * 1024 * 1024) { alert('"' + archivo.name + '" supera los 5MB.'); continue; }
+                var dup = false;
+                for (var j = 0; j < archivosDocente.length; j++) {
+                    if (archivosDocente[j].name === archivo.name && archivosDocente[j].size === archivo.size) { dup = true; break; }
+                }
+                if (!dup) archivosDocente.push(archivo);
+            }
+            renderListaDoc();
+            sincronizarInputsDoc();
+        }
+
+        function eliminarArchivoDoc(idx) {
+            archivosDocente.splice(idx, 1);
+            renderListaDoc();
+            sincronizarInputsDoc();
+        }
+
+        function eliminarTodosDoc() {
+            archivosDocente = [];
+            renderListaDoc();
+            sincronizarInputsDoc();
+        }
+
+        function renderListaDoc() {
+            listaDivDoc.innerHTML = '';
+            if (archivosDocente.length === 0) { listaDivDoc.classList.add('hidden'); return; }
+            listaDivDoc.classList.remove('hidden');
+
+            var enc = document.createElement('div');
+            enc.className = 'flex items-center justify-between';
+            enc.innerHTML = '<p class="text-xs font-bold text-gray-600 uppercase tracking-wide flex items-center gap-1.5">' +
+                '<i class="fas fa-paperclip"></i> ' + archivosDocente.length + ' archivo' + (archivosDocente.length > 1 ? 's' : '') +
+                ' adjunto' + (archivosDocente.length > 1 ? 's' : '') + '</p>' +
+                '<button type="button" onclick="eliminarTodosDoc()" class="text-xs text-red-500 hover:text-red-700 font-bold"><i class="fas fa-trash-alt mr-1"></i>Quitar todos</button>';
+            listaDivDoc.appendChild(enc);
+
+            for (var i = 0; i < archivosDocente.length; i++) {
+                var a = archivosDocente[i];
+                var t = (a.size / 1024 / 1024).toFixed(2);
+                var ex = a.name.split('.').pop().toUpperCase();
+                var ic = ex === 'PDF' ? 'fa-file-pdf text-red-500' : 'fa-file-image text-blue-500';
+                var f = document.createElement('div');
+                f.className = 'flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm';
+                f.innerHTML = '<i class="fas ' + ic + ' text-lg"></i>' +
+                    '<span class="font-medium text-gray-700 truncate flex-1">' + a.name + '</span>' +
+                    '<span class="text-xs text-gray-400 font-mono whitespace-nowrap">' + t + ' MB</span>' +
+                    '<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">' + ex + '</span>' +
+                    '<button type="button" onclick="eliminarArchivoDoc(' + i + ')" class="text-red-400 hover:text-red-600 ml-1" title="Quitar"><i class="fas fa-times-circle"></i></button>';
+                listaDivDoc.appendChild(f);
+            }
+        }
+
+        function sincronizarInputsDoc() {
+            contenedorInputsDoc.innerHTML = '';
+            for (var i = 0; i < archivosDocente.length; i++) {
+                var dt = new DataTransfer();
+                dt.items.add(archivosDocente[i]);
+                var inp = document.createElement('input');
+                inp.type = 'file'; inp.name = 'evidencias[]'; inp.files = dt.files; inp.style.display = 'none';
+                contenedorInputsDoc.appendChild(inp);
+            }
+        }
 
         // Mostrar advertencia de comentario obligatorio al seleccionar "Rechazar"
         var radios = document.querySelectorAll('input[name="decision"]');
