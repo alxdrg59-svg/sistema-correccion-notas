@@ -60,9 +60,12 @@ class SolicitudController extends Controller
         // Buscar un periodo cuyo rango de fechas incluya el dia de hoy.
         // No se usa el campo 'estado' — el sistema determina el periodo
         // activo automaticamente segun las fechas configuradas por el admin.
+        // Se ordena por fecha_inicio descendente para que si hay traslape
+        // de fechas, se tome la evaluacion mas reciente.
         $periodoActivo = DB::table('periodos_correccion')
             ->where('fecha_inicio', '<=', $fechaHoy)
             ->where('fecha_fin', '>=', $fechaHoy)
+            ->orderBy('fecha_inicio', 'desc')
             ->first();
 
         // Estas variables se envian a la vista para controlar el modo del formulario

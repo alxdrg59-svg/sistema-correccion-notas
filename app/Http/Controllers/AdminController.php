@@ -319,6 +319,24 @@ class AdminController extends Controller
                 ->with('error', 'El periodo solicitado no existe.');
         }
 
+        // Verificar que las nuevas fechas no se superpongan con otro periodo del mismo ciclo.
+        // Se busca cualquier periodo (que no sea este mismo) cuyo rango de fechas
+        // se cruce con el rango que se quiere guardar.
+        $hayTraslape = DB::table('periodos_correccion')
+            ->where('ciclo_id', $periodo->ciclo_id)
+            ->where('id', '!=', $id)
+            ->where('fecha_inicio', '<=', $request->fecha_fin)
+            ->where('fecha_fin', '>=', $request->fecha_inicio)
+            ->first();
+
+        if ($hayTraslape) {
+            return redirect('/admin/periodos')
+                ->with('error', 'Las fechas se superponen con "' . $hayTraslape->evaluacion . '" (' .
+                    \Carbon\Carbon::parse($hayTraslape->fecha_inicio)->format('d/m/Y') . ' — ' .
+                    \Carbon\Carbon::parse($hayTraslape->fecha_fin)->format('d/m/Y') .
+                    '). Ajuste las fechas para que no se crucen.');
+        }
+
         DB::table('periodos_correccion')
             ->where('id', $id)
             ->update([
