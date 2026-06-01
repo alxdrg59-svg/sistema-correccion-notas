@@ -80,12 +80,6 @@ Route::get('/docente/solicitud/{id}', [DocenteController::class, 'verDetalle'])
 Route::post('/docente/solicitud/{id}/decision', [DocenteController::class, 'procesarDecision'])
     ->middleware(['auth', 'rol:docente']);
 
-// Rutas para excepciones de docente
-Route::get('/docente/excepciones', [DocenteController::class, 'excepciones'])
-    ->middleware(['auth', 'rol:docente']);
-
-Route::post('/docente/excepciones/guardar', [DocenteController::class, 'guardarExcepcion'])
-    ->middleware(['auth', 'rol:docente']);
 
 // Rutas para coordinador
 Route::get('/coordinador/dashboard', [CoordinadorController::class, 'index'])

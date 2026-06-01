@@ -61,13 +61,6 @@
                     Solicitudes de corrección de nota recibidas de tus estudiantes.
                 </p>
             </div>
-            <a href="/docente/excepciones"
-                style="background-color: #5D0A28;"
-                onmouseover="this.style.backgroundColor='#4A0820'"
-                onmouseout="this.style.backgroundColor='#5D0A28'"
-                class="text-white px-5 py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition inline-flex items-center gap-2 shadow-lg whitespace-nowrap">
-                <i class="fas fa-exclamation-circle"></i> Solicitud por Excepción
-            </a>
         </div>
 
         {{-- Filtros --}}

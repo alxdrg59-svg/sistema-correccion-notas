@@ -262,6 +262,23 @@ class AdminController extends Controller
             ->with('success', 'Fechas del ciclo académico actualizadas correctamente.');
     }
 
+    // =====================================================
+    // TOGGLE PERIODO: Activa o desactiva un periodo individual
+    //
+    // Simplemente cambia el estado del periodo entre 0 y 1.
+    // Cada periodo se maneja de forma independiente: activar
+    // o desactivar uno NO afecta a los demas periodos.
+    //
+    // Las excepciones ahora se manejan desde el formulario
+    // del estudiante, no desde la activacion de periodos.
+    //
+    // Se llama por AJAX desde la vista gestionar_periodos,
+    // pero tambien soporta peticiones normales (no-AJAX).
+    //
+    // En respuesta AJAX, devuelve el estado actualizado
+    // de TODOS los periodos para que el JavaScript pueda
+    // actualizar los badges y botones en la vista sin recargar.
+    // =====================================================
     public function togglePeriodo(Request $request, $id)
     {
         $periodo = DB::table('periodos_correccion')->where('id', $id)->first();
@@ -273,60 +290,17 @@ class AdminController extends Controller
             return redirect('/admin/periodos')->with('error', 'Periodo no encontrado.');
         }
 
-        if ($periodo->estado == 1) {
-            // Deactivating: only turn off this one period
-            DB::table('periodos_correccion')->where('id', $id)->update(['estado' => 0]);
+        // Cambiar el estado: si estaba activo (1) pasa a inactivo (0) y viceversa
+        $nuevoEstado = (int)$periodo->estado === 1 ? 0 : 1;
+        DB::table('periodos_correccion')->where('id', $id)->update(['estado' => $nuevoEstado]);
 
-            // If this is the main period, also deactivate its exception (previous)
-            $hoy = now()->toDateString();
-            $esMain = $periodo->fecha_inicio <= $hoy && $periodo->fecha_fin >= $hoy;
-            if ($esMain) {
-                $periodoAnterior = DB::table('periodos_correccion')
-                    ->where('ciclo_id', $periodo->ciclo_id)
-                    ->where('fecha_inicio', '<', $periodo->fecha_inicio)
-                    ->orderBy('fecha_inicio', 'desc')
-                    ->first();
-                if ($periodoAnterior) {
-                    DB::table('periodos_correccion')
-                        ->where('id', $periodoAnterior->id)
-                        ->update(['estado' => 0]);
-                }
-            }
-        } else {
-            // Activating: check if another period is already the main active one
-            $otroPeriodoActivo = DB::table('periodos_correccion')
-                ->where('ciclo_id', $periodo->ciclo_id)
-                ->where('id', '!=', $id)
-                ->where('estado', 1)
-                ->first();
-
-            if ($otroPeriodoActivo) {
-                // Another period is already active — just enable this one alongside it
-                DB::table('periodos_correccion')->where('id', $id)->update(['estado' => 1]);
-            } else {
-                // No other period active — this becomes the main period
-                DB::table('periodos_correccion')->update(['estado' => 0]);
-                DB::table('periodos_correccion')->where('id', $id)->update(['estado' => 1]);
-
-                // Also activate the previous evaluation as exception
-                $periodoAnterior = DB::table('periodos_correccion')
-                    ->where('ciclo_id', $periodo->ciclo_id)
-                    ->where('fecha_inicio', '<', $periodo->fecha_inicio)
-                    ->orderBy('fecha_inicio', 'desc')
-                    ->first();
-                if ($periodoAnterior) {
-                    DB::table('periodos_correccion')
-                        ->where('id', $periodoAnterior->id)
-                        ->update(['estado' => 1]);
-                }
-            }
-        }
-
+        // Si la peticion fue por AJAX, devolver JSON con el estado de todos los periodos
         if ($request->ajax()) {
             $periodos = DB::table('periodos_correccion')->get();
             $resultado = [];
             $hoy = now()->toDateString();
             foreach ($periodos as $p) {
+                // Un periodo solo esta "activo" si estado=1 Y la fecha de hoy esta dentro del rango
                 $activo = (int)$p->estado === 1 && $p->fecha_inicio <= $hoy && $p->fecha_fin >= $hoy;
                 $resultado[$p->id] = [
                     'estado' => (int)$p->estado,
