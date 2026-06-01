@@ -118,9 +118,6 @@ Route::post('/admin/periodos/{id}/actualizar', [AdminController::class, 'actuali
 Route::get('/admin/periodos', [AdminController::class, 'periodos'])
     ->middleware(['auth', 'rol:admin']);
 
-Route::post('/admin/periodos/{id}/toggle', [AdminController::class, 'togglePeriodo'])
-    ->middleware(['auth', 'rol:admin']);
-
 Route::post('/admin/ciclos/{id}/actualizar', [AdminController::class, 'actualizarCiclo'])
     ->middleware(['auth', 'rol:admin']);
 

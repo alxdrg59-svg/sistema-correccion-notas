@@ -302,57 +302,6 @@ class AdminController extends Controller
             ->with('success', 'Fechas del ciclo académico actualizadas correctamente.');
     }
 
-    // =====================================================
-    // TOGGLE PERIODO: Activa o desactiva un periodo individual
-    //
-    // Simplemente cambia el estado del periodo entre 0 y 1.
-    // Cada periodo se maneja de forma independiente: activar
-    // o desactivar uno NO afecta a los demas periodos.
-    //
-    // Las excepciones ahora se manejan desde el formulario
-    // del estudiante, no desde la activacion de periodos.
-    //
-    // Se llama por AJAX desde la vista gestionar_periodos,
-    // pero tambien soporta peticiones normales (no-AJAX).
-    //
-    // En respuesta AJAX, devuelve el estado actualizado
-    // de TODOS los periodos para que el JavaScript pueda
-    // actualizar los badges y botones en la vista sin recargar.
-    // =====================================================
-    public function togglePeriodo(Request $request, $id)
-    {
-        $periodo = DB::table('periodos_correccion')->where('id', $id)->first();
-
-        if (!$periodo) {
-            if ($request->ajax()) {
-                return response()->json(['error' => 'Periodo no encontrado.'], 404);
-            }
-            return redirect('/admin/periodos')->with('error', 'Periodo no encontrado.');
-        }
-
-        // Cambiar el estado: si estaba activo (1) pasa a inactivo (0) y viceversa
-        $nuevoEstado = (int)$periodo->estado === 1 ? 0 : 1;
-        DB::table('periodos_correccion')->where('id', $id)->update(['estado' => $nuevoEstado]);
-
-        // Si la peticion fue por AJAX, devolver JSON con el estado de todos los periodos
-        if ($request->ajax()) {
-            $periodos = DB::table('periodos_correccion')->get();
-            $resultado = [];
-            $hoy = now()->toDateString();
-            foreach ($periodos as $p) {
-                // Un periodo solo esta "activo" si estado=1 Y la fecha de hoy esta dentro del rango
-                $activo = (int)$p->estado === 1 && $p->fecha_inicio <= $hoy && $p->fecha_fin >= $hoy;
-                $resultado[$p->id] = [
-                    'estado' => (int)$p->estado,
-                    'activo' => $activo,
-                ];
-            }
-            return response()->json(['periodos' => $resultado]);
-        }
-
-        return redirect('/admin/periodos')->with('success', 'Estado actualizado.');
-    }
-
     public function actualizarPeriodo(Request $request, $id)
     {
         $request->validate([

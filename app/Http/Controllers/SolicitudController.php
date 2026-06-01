@@ -38,8 +38,8 @@ class SolicitudController extends Controller
     //
     // Tiene dos modos de funcionamiento:
     //
-    // 1) MODO NORMAL: Si existe un periodo activo (estado=1 y
-    //    la fecha de hoy esta dentro de fecha_inicio y fecha_fin),
+    // 1) MODO NORMAL: Si existe un periodo activo (la fecha
+    //    de hoy esta dentro de fecha_inicio y fecha_fin),
     //    el estudiante puede crear una solicitud normal.
     //    Tambien puede marcar el checkbox de excepcion para
     //    solicitar correccion de la evaluacion anterior.
@@ -57,9 +57,10 @@ class SolicitudController extends Controller
     {
         $fechaHoy = now()->toDateString();
 
-        // Buscar un periodo que este activo Y dentro de su rango de fechas
+        // Buscar un periodo cuyo rango de fechas incluya el dia de hoy.
+        // No se usa el campo 'estado' — el sistema determina el periodo
+        // activo automaticamente segun las fechas configuradas por el admin.
         $periodoActivo = DB::table('periodos_correccion')
-            ->where('estado', 1)
             ->where('fecha_inicio', '<=', $fechaHoy)
             ->where('fecha_fin', '>=', $fechaHoy)
             ->first();
@@ -187,6 +188,12 @@ class SolicitudController extends Controller
 
         // Validar con mensajes personalizados
         $request->validate($rules, [
+            'motivo.required'     => 'Debe ingresar el motivo del reclamo.',
+            'motivo.min'          => 'El motivo debe tener al menos 10 caracteres.',
+            'nota_actual.required' => 'Debe ingresar la nota que propone.',
+            'nota_actual.numeric' => 'La nota debe ser un número válido.',
+            'nota_actual.min'     => 'La nota no puede ser menor a 0.',
+            'nota_actual.max'     => 'La nota no puede ser mayor a 10.',
             'evidencias.required' => 'La evidencia es obligatoria para solicitudes de excepción.',
             'evidencias.*.mimes'  => 'Solo se permiten archivos JPG, PNG o PDF.',
             'evidencias.*.max'    => 'Cada archivo no puede superar los 5MB.',

@@ -175,7 +175,7 @@
                 </span>
             </div>
 
-            <table class="w-full text-left border-collapse min-w-[800px]">
+            <table class="w-full text-left border-collapse min-w-[700px]">
                 <thead class="bg-gray-50 border-b">
                     <tr>
                         <th class="p-3 font-bold text-gray-600 text-xs uppercase tracking-wider">Evaluación</th>
@@ -183,8 +183,7 @@
                         <th class="p-3 font-bold text-gray-600 text-xs uppercase tracking-wider">Fecha de Inicio</th>
                         <th class="p-3 font-bold text-gray-600 text-xs uppercase tracking-wider">Fecha de Fin</th>
                         <th class="p-3 font-bold text-gray-600 text-xs uppercase tracking-wider text-center">Estado</th>
-                        <th class="p-3 font-bold text-gray-600 text-xs uppercase tracking-wider text-right">Programar</th>
-                        <th class="p-3 font-bold text-gray-600 text-xs uppercase tracking-wider text-right">Activar/Desactivar Corrección</th>
+                        <th class="p-3 font-bold text-gray-600 text-xs uppercase tracking-wider text-right">Guardar</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -192,17 +191,14 @@
                         <tr class="border-b hover:bg-gray-50 transition">
                             <form action="/admin/periodos/{{ $periodo->id }}/actualizar" method="POST">
                                 @csrf
-                                {{-- Evaluación (solo lectura) --}}
                                 <td class="p-3">
                                     <p class="font-bold text-gray-800 text-sm">{{ $periodo->evaluacion }}</p>
                                 </td>
 
-                                {{-- Ciclo (solo lectura) --}}
                                 <td class="p-3">
                                     <p class="text-sm text-gray-600">{{ $periodo->ciclo_nombre }}</p>
                                 </td>
 
-                                {{-- Fecha de inicio (editable) --}}
                                 <td class="p-3">
                                     <input type="date" name="fecha_inicio"
                                         value="{{ \Carbon\Carbon::parse($periodo->fecha_inicio)->format('Y-m-d') }}"
@@ -210,7 +206,6 @@
                                         required>
                                 </td>
 
-                                {{-- Fecha de fin (editable) --}}
                                 <td class="p-3">
                                     <input type="date" name="fecha_fin"
                                         value="{{ \Carbon\Carbon::parse($periodo->fecha_fin)->format('Y-m-d') }}"
@@ -218,20 +213,19 @@
                                         required>
                                 </td>
 
-                                {{-- Estado (badge real-time) --}}
+                                {{-- Estado determinado automaticamente por las fechas --}}
                                 <td class="p-3 text-center">
                                     @php
                                         $hoy = now()->toDateString();
-                                        $realmenteActivo = (int)$periodo->estado === 1 && $periodo->fecha_inicio <= $hoy && $periodo->fecha_fin >= $hoy;
+                                        $activo = $periodo->fecha_inicio <= $hoy && $periodo->fecha_fin >= $hoy;
+                                        $vencido = $periodo->fecha_fin < $hoy;
                                     @endphp
-                                    <span id="badge-{{ $periodo->id }}"
-                                        class="px-3 py-1 rounded-full text-xs font-bold uppercase transition-all duration-300
-                                        {{ $realmenteActivo ? 'bg-green-100 text-green-700' : ((int)$periodo->estado === 1 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500') }}">
-                                        {{ $realmenteActivo ? 'Activo' : ((int)$periodo->estado === 1 ? 'Habilitado (fuera de fecha)' : 'Inactivo') }}
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase
+                                        {{ $activo ? 'bg-green-100 text-green-700' : ($vencido ? 'bg-gray-100 text-gray-500' : 'bg-yellow-100 text-yellow-700') }}">
+                                        {{ $activo ? 'Activo' : ($vencido ? 'Finalizado' : 'Programado') }}
                                     </span>
                                 </td>
 
-                                {{-- Botón guardar fechas --}}
                                 <td class="p-3 text-right">
                                     <button type="submit"
                                         style="background-color: #5D0A28;"
@@ -242,22 +236,10 @@
                                     </button>
                                 </td>
                             </form>
-
-                                {{-- Toggle estado (AJAX, no recarga) --}}
-                                <td class="p-3 text-right">
-                                    <button id="btn-toggle-{{ $periodo->id }}"
-                                        onclick="togglePeriodo({{ $periodo->id }})"
-                                        class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all duration-300 inline-flex items-center gap-1.5
-                                        {{ (int)$periodo->estado === 1 ? 'bg-red-600 hover:bg-red-700 text-white' : 'text-white' }}"
-                                        @if((int)$periodo->estado !== 1) style="background-color: #5D0A28;" @endif>
-                                        <i class="fas {{ (int)$periodo->estado === 1 ? 'fa-toggle-off' : 'fa-toggle-on' }}"></i>
-                                        {{ (int)$periodo->estado === 1 ? 'Desactivar' : 'Activar' }}
-                                    </button>
-                                </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="p-12 text-center">
+                            <td colspan="6" class="p-12 text-center">
                                 <div class="flex flex-col items-center text-gray-400">
                                     <i class="fas fa-calendar-times text-5xl mb-4 text-gray-300"></i>
                                     <p class="font-semibold text-base">No hay periodos registrados</p>
@@ -275,72 +257,16 @@
             <p class="text-sm text-blue-700">
                 <i class="fas fa-info-circle text-blue-500 mr-1"></i>
                 <span class="font-bold">Recuerda:</span>
-                un periodo se considera <span class="font-bold">activo</span> únicamente cuando
-                su estado es <span class="font-bold">Abierto</span> y la fecha actual está dentro del rango.
+                el sistema determina automáticamente el periodo activo según las fechas.
+                Si la fecha de hoy está dentro del rango de un periodo, ese periodo está <span class="font-bold">Activo</span>.
+                Si ya pasó, aparece como <span class="font-bold">Finalizado</span>.
+                Si aún no llega, aparece como <span class="font-bold">Programado</span>.
             </p>
         </div>
 
     </div>
 
     <script>
-        function togglePeriodo(id) {
-            var btn = document.getElementById('btn-toggle-' + id);
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-
-            fetch('/admin/periodos/' + id + '/toggle', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                var periodos = data.periodos;
-                var hoy = new Date().toISOString().split('T')[0];
-
-                for (var pid in periodos) {
-                    var p = periodos[pid];
-                    var badge = document.getElementById('badge-' + pid);
-                    var toggle = document.getElementById('btn-toggle-' + pid);
-
-                    if (badge) {
-                        badge.className = 'px-3 py-1 rounded-full text-xs font-bold uppercase transition-all duration-300 ';
-                        if (p.activo) {
-                            badge.className += 'bg-green-100 text-green-700';
-                            badge.textContent = 'Activo';
-                        } else if (p.estado === 1) {
-                            badge.className += 'bg-yellow-100 text-yellow-700';
-                            badge.textContent = 'Habilitado (fuera de fecha)';
-                        } else {
-                            badge.className += 'bg-gray-100 text-gray-500';
-                            badge.textContent = 'Inactivo';
-                        }
-                    }
-
-                    if (toggle) {
-                        toggle.disabled = false;
-                        toggle.style.opacity = '1';
-                        if (p.estado === 1) {
-                            toggle.className = 'px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all duration-300 inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white';
-                            toggle.style.backgroundColor = '';
-                            toggle.innerHTML = '<i class="fas fa-toggle-off"></i> Desactivar';
-                        } else {
-                            toggle.className = 'px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all duration-300 inline-flex items-center gap-1.5 text-white';
-                            toggle.style.backgroundColor = '#5D0A28';
-                            toggle.innerHTML = '<i class="fas fa-toggle-on"></i> Activar';
-                        }
-                    }
-                }
-            })
-            .catch(function() {
-                btn.disabled = false;
-                btn.style.opacity = '1';
-            });
-        }
-
         document.addEventListener('DOMContentLoaded', function () {
             function desvanecerAlerta(id) {
                 var el = document.getElementById(id);
