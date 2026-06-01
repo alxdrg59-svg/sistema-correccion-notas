@@ -344,13 +344,22 @@
                             (Opcional)
                         </span>
                     </label>
+                    <div class="border-2 border-dashed rounded-lg p-6 text-center transition cursor-pointer hover:border-[#5D0A28]"
+                        id="zona_evidencia"
+                        style="border-color: {{ $modoExcepcion ? '#fca5a5' : '#d1d5db' }};"
+                        onclick="document.getElementById('input_evidencia').click()">
+                        <i class="fas fa-cloud-upload-alt text-3xl mb-2" style="color: {{ $modoExcepcion ? '#f87171' : '#9ca3af' }};"></i>
+                        <p class="text-sm text-gray-500">Haz clic para seleccionar archivos</p>
+                        <p class="text-xs text-gray-400 mt-1 italic" id="texto_formato_evidencia">
+                            Formatos: JPG, PNG, PDF — Máximo 5MB por archivo
+                        </p>
+                    </div>
                     <input type="file" name="evidencias[]" id="input_evidencia" accept=".jpg,.jpeg,.png,.pdf" multiple
-                        class="w-full p-2 border-2 rounded-lg bg-white text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold transition"
-                        style="border-color: {{ $modoExcepcion ? '#fca5a5' : '#e5e7eb' }};"
+                        class="hidden"
                         {{ $modoExcepcion ? 'required' : '' }}>
-                    <p class="text-xs mt-1" style="color: {{ $modoExcepcion ? '#ef4444' : '#6b7280' }};" id="texto_formato_evidencia">
-                        Formatos: JPG, PNG, PDF — Maximo 5MB por archivo — Puede seleccionar varios archivos
-                    </p>
+
+                    {{-- Lista de archivos seleccionados (se llena con JavaScript) --}}
+                    <div id="lista_archivos" class="hidden mt-3 space-y-1.5"></div>
                 </div>
 
             </div>
@@ -437,8 +446,6 @@
         });
 
         // 3) LOGICA DEL CHECKBOX DE EXCEPCION
-        // Solo se agrega el listener si el checkbox existe y NO esta deshabilitado
-        // (en modo excepcion forzado esta deshabilitado, asi que no necesita listener)
         var checkExcepcion = document.getElementById('check_excepcion');
         if (checkExcepcion && !checkExcepcion.disabled) {
             checkExcepcion.addEventListener('change', function () {
@@ -447,32 +454,66 @@
                 var textoObligatorio = document.getElementById('texto_evidencia_obligatoria');
                 var textoOpcional = document.getElementById('texto_evidencia_opcional');
                 var labelEvidencia = document.getElementById('label_evidencia');
-                var textoFormato = document.getElementById('texto_formato_evidencia');
+                var zonaEvidencia = document.getElementById('zona_evidencia');
                 var textoBtn = document.getElementById('texto_btn_enviar');
 
                 if (this.checked) {
-                    // EXCEPCION ACTIVADA: mostrar dropdown, hacer evidencia obligatoria
                     contenedorEval.classList.remove('hidden');
                     inputEvidencia.required = true;
-                    inputEvidencia.style.borderColor = '#fca5a5';
+                    zonaEvidencia.style.borderColor = '#fca5a5';
                     textoObligatorio.classList.remove('hidden');
                     textoOpcional.classList.add('hidden');
                     labelEvidencia.style.color = '#dc2626';
-                    textoFormato.style.color = '#ef4444';
                     textoBtn.textContent = 'Enviar Solicitud de Excepción';
                 } else {
-                    // EXCEPCION DESACTIVADA: ocultar dropdown, evidencia vuelve a ser opcional
                     contenedorEval.classList.add('hidden');
                     inputEvidencia.required = false;
-                    inputEvidencia.style.borderColor = '#e5e7eb';
+                    zonaEvidencia.style.borderColor = '#d1d5db';
                     textoObligatorio.classList.add('hidden');
                     textoOpcional.classList.remove('hidden');
                     labelEvidencia.style.color = '#374151';
-                    textoFormato.style.color = '#6b7280';
                     textoBtn.textContent = 'Enviar Solicitud al Docente';
                 }
             });
         }
+
+        // 4) MOSTRAR LISTA DE ARCHIVOS SELECCIONADOS
+        // Cuando el usuario selecciona archivos, se muestra una lista
+        // con el nombre, tipo y tamano de cada archivo adjunto
+        document.getElementById('input_evidencia').addEventListener('change', function () {
+            var listaDiv = document.getElementById('lista_archivos');
+            listaDiv.innerHTML = '';
+
+            if (this.files.length === 0) {
+                listaDiv.classList.add('hidden');
+                return;
+            }
+
+            listaDiv.classList.remove('hidden');
+
+            // Encabezado con la cantidad de archivos
+            var encabezado = document.createElement('p');
+            encabezado.className = 'text-xs font-bold text-gray-600 uppercase tracking-wide flex items-center gap-1.5';
+            encabezado.innerHTML = '<i class="fas fa-paperclip"></i> ' + this.files.length + ' archivo' + (this.files.length > 1 ? 's' : '') + ' seleccionado' + (this.files.length > 1 ? 's' : '');
+            listaDiv.appendChild(encabezado);
+
+            for (var i = 0; i < this.files.length; i++) {
+                var archivo = this.files[i];
+                var tamano = (archivo.size / 1024 / 1024).toFixed(2);
+                var extension = archivo.name.split('.').pop().toUpperCase();
+
+                // Icono segun el tipo de archivo
+                var icono = extension === 'PDF' ? 'fa-file-pdf text-red-500' : 'fa-file-image text-blue-500';
+
+                var fila = document.createElement('div');
+                fila.className = 'flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm';
+                fila.innerHTML = '<i class="fas ' + icono + '"></i>' +
+                    '<span class="font-medium text-gray-700 truncate flex-1">' + archivo.name + '</span>' +
+                    '<span class="text-xs text-gray-400 font-mono whitespace-nowrap">' + tamano + ' MB</span>' +
+                    '<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">' + extension + '</span>';
+                listaDiv.appendChild(fila);
+            }
+        });
     </script>
 </body>
 </html>

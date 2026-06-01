@@ -34,6 +34,7 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 COPY docker/nginx.conf /etc/nginx/sites-available/default
+COPY docker/php.ini /usr/local/etc/php/conf.d/uploads.ini
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

@@ -297,11 +297,12 @@
                         onclick="document.getElementById('input_archivo').click()">
                         <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                         <p class="text-sm text-gray-500">Haz clic para seleccionar archivos</p>
-                        <p id="nombre_archivo" class="text-xs text-gray-400 mt-1 italic">Ningún archivo seleccionado</p>
+                        <p class="text-xs text-gray-400 mt-1 italic">Formatos: JPG, PNG, PDF — Máximo 5MB por archivo</p>
                     </div>
                     <input type="file" name="evidencias[]" id="input_archivo"
                         accept=".jpg,.jpeg,.png,.pdf"
                         class="hidden" multiple>
+                    <div id="lista_archivos_docente" class="hidden mt-3 space-y-1.5"></div>
                 </div>
 
                 {{-- Botón enviar --}}
@@ -348,15 +349,37 @@
         o mostrar una advertencia de comentario obligatorio al seleccionar "Rechazar".
     =================================================== --}}
     <script>
-        // Mostrar nombres de los archivos seleccionados
+        // Mostrar lista de archivos seleccionados por el docente
         document.getElementById('input_archivo').addEventListener('change', function () {
-            var nombres = [];
-            for (var i = 0; i < this.files.length; i++) {
-                nombres.push(this.files[i].name);
+            var listaDiv = document.getElementById('lista_archivos_docente');
+            listaDiv.innerHTML = '';
+
+            if (this.files.length === 0) {
+                listaDiv.classList.add('hidden');
+                return;
             }
-            document.getElementById('nombre_archivo').textContent = nombres.length > 0
-                ? nombres.join(', ')
-                : 'Ningún archivo seleccionado';
+
+            listaDiv.classList.remove('hidden');
+
+            var encabezado = document.createElement('p');
+            encabezado.className = 'text-xs font-bold text-gray-600 uppercase tracking-wide flex items-center gap-1.5';
+            encabezado.innerHTML = '<i class="fas fa-paperclip"></i> ' + this.files.length + ' archivo' + (this.files.length > 1 ? 's' : '') + ' seleccionado' + (this.files.length > 1 ? 's' : '');
+            listaDiv.appendChild(encabezado);
+
+            for (var i = 0; i < this.files.length; i++) {
+                var archivo = this.files[i];
+                var tamano = (archivo.size / 1024 / 1024).toFixed(2);
+                var extension = archivo.name.split('.').pop().toUpperCase();
+                var icono = extension === 'PDF' ? 'fa-file-pdf text-red-500' : 'fa-file-image text-blue-500';
+
+                var fila = document.createElement('div');
+                fila.className = 'flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm';
+                fila.innerHTML = '<i class="fas ' + icono + '"></i>' +
+                    '<span class="font-medium text-gray-700 truncate flex-1">' + archivo.name + '</span>' +
+                    '<span class="text-xs text-gray-400 font-mono whitespace-nowrap">' + tamano + ' MB</span>' +
+                    '<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">' + extension + '</span>';
+                listaDiv.appendChild(fila);
+            }
         });
 
         // Mostrar advertencia de comentario obligatorio al seleccionar "Rechazar"
