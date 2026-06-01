@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class CoordinadorController extends Controller
 {
@@ -117,12 +118,26 @@ class CoordinadorController extends Controller
             )
             ->first();
 
-        // Evidencia subida por el docente (si existe)
-        $evidenciaDocente = DB::table('evidencias')
+        // Evidencias subidas por el docente
+        $evidenciasDocente = DB::table('evidencias')
             ->where('solicitud_id', $id)
             ->where('usuario_id', $solicitud->docente_id)
             ->orderBy('fecha', 'desc')
-            ->first();
+            ->get();
+
+        // Evidencias subidas por el estudiante
+        $evidenciasEstudiante = DB::table('evidencias')
+            ->where('solicitud_id', $id)
+            ->where('descripcion', 'like', '%estudiante%')
+            ->orderBy('fecha', 'desc')
+            ->get();
+
+        // Evidencias subidas por el coordinador
+        $evidenciasCoordinador = DB::table('evidencias')
+            ->where('solicitud_id', $id)
+            ->where('usuario_id', Auth::id())
+            ->orderBy('fecha', 'desc')
+            ->get();
 
         // Decisión previa del coordinador (si ya actuó antes — para edición)
         $decisionCoordinador = DB::table('aprobaciones')
@@ -147,7 +162,9 @@ class CoordinadorController extends Controller
         return view('detalle_solicitud_coordinador', compact(
             'solicitud',
             'decisionDocente',
-            'evidenciaDocente',
+            'evidenciasDocente',
+            'evidenciasEstudiante',
+            'evidenciasCoordinador',
             'decisionCoordinador',
             'adminYaActuo'
         ));
@@ -195,10 +212,12 @@ class CoordinadorController extends Controller
                 ->with('error', 'El administrador ya procesó esta solicitud. No puedes modificar tu decisión.');
         }
 
-        // Validación — comentario obligatorio al rechazar
+        // Validación — comentario obligatorio al rechazar, evidencias opcionales
         $rules = [
-            'decision'   => 'required|in:aprobado,rechazado',
-            'comentario' => 'nullable|string|max:500',
+            'decision'     => 'required|in:aprobado,rechazado',
+            'comentario'   => 'nullable|string|max:500',
+            'evidencias'   => 'nullable|array',
+            'evidencias.*' => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
         ];
 
         if ($request->decision === 'rechazado') {
@@ -208,6 +227,8 @@ class CoordinadorController extends Controller
         $request->validate($rules, [
             'comentario.required' => 'Debes escribir una justificación para rechazar la solicitud.',
             'comentario.min'      => 'La justificación debe tener al menos 10 caracteres.',
+            'evidencias.*.mimes'  => 'Solo se permiten archivos JPG, PNG o PDF.',
+            'evidencias.*.max'    => 'Cada archivo no puede superar los 5MB.',
         ]);
 
         // Definir nuevo estado y texto según decisión
@@ -217,6 +238,34 @@ class CoordinadorController extends Controller
         } else {
             $nuevoEstado = 'rechazado_coordinador';
             $accionTexto = 'Rechazado por coordinador';
+        }
+
+        // Borrar evidencias anteriores del coordinador si esta editando
+        $evidenciasPrevias = DB::table('evidencias')
+            ->where('solicitud_id', $id)
+            ->where('usuario_id', Auth::id())
+            ->get();
+        foreach ($evidenciasPrevias as $evPrevia) {
+            Storage::disk('gcs')->delete($evPrevia->archivo);
+            DB::table('evidencias')->where('id', $evPrevia->id)->delete();
+        }
+
+        // Guardar nuevas evidencias del coordinador
+        if ($request->hasFile('evidencias')) {
+            foreach ($request->file('evidencias') as $index => $archivo) {
+                if ($archivo->isValid()) {
+                    $extension = $archivo->getClientOriginalExtension();
+                    $nombreArchivo = 'evidencia_coordinador_' . $id . '_' . time() . '_' . $index . '.' . $extension;
+                    $rutaArchivo = $archivo->storeAs('evidencias', $nombreArchivo, 'gcs');
+                    DB::table('evidencias')->insert([
+                        'solicitud_id' => $id,
+                        'usuario_id'   => Auth::id(),
+                        'archivo'      => $rutaArchivo,
+                        'descripcion'  => 'Evidencia adjuntada por coordinador',
+                        'fecha'        => now(),
+                    ]);
+                }
+            }
         }
 
         // Registrar en aprobaciones

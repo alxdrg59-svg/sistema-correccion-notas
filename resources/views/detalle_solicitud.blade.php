@@ -141,7 +141,7 @@
             </h3>
             <div class="flex items-center justify-center gap-8 flex-wrap">
                 <div class="text-center">
-                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nota Anterior</p>
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nota Propuesta</p>
                     <p class="text-4xl font-extrabold text-red-500">{{ $historialNota->nota_anterior }}</p>
                 </div>
                 <div class="text-center">

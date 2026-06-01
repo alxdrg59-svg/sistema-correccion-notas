@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class AdminController extends Controller
@@ -118,12 +119,26 @@ class AdminController extends Controller
             )
             ->first();
 
-        // Evidencia del docente si subió
-        $evidenciaDocente = DB::table('evidencias')
+        // Evidencias por rol
+        $evidenciasEstudiante = DB::table('evidencias')
+            ->where('solicitud_id', $id)
+            ->where('descripcion', 'like', '%estudiante%')
+            ->orderBy('fecha', 'desc')->get();
+
+        $evidenciasDocente = DB::table('evidencias')
             ->where('solicitud_id', $id)
             ->where('usuario_id', $solicitud->docente_id)
-            ->orderBy('fecha', 'desc')
-            ->first();
+            ->orderBy('fecha', 'desc')->get();
+
+        $evidenciasCoordinador = DB::table('evidencias')
+            ->where('solicitud_id', $id)
+            ->where('descripcion', 'like', '%coordinador%')
+            ->orderBy('fecha', 'desc')->get();
+
+        $evidenciasAdmin = DB::table('evidencias')
+            ->where('solicitud_id', $id)
+            ->where('descripcion', 'like', '%admin%')
+            ->orderBy('fecha', 'desc')->get();
 
         $historialNota = DB::table('historial_notas')
             ->where('solicitud_id', $id)
@@ -134,7 +149,10 @@ class AdminController extends Controller
             'solicitud',
             'decisionDocente',
             'decisionCoordinador',
-            'evidenciaDocente',
+            'evidenciasEstudiante',
+            'evidenciasDocente',
+            'evidenciasCoordinador',
+            'evidenciasAdmin',
             'historialNota'
         ));
     }
@@ -159,14 +177,36 @@ class AdminController extends Controller
 
         // Validación de la nota nueva — rango 0.0 a 10
         $request->validate([
-            'nota_nueva'  => 'required|numeric|min:0|max:10',
-            'comentario'  => 'nullable|string|max:500',
+            'nota_nueva'   => 'required|numeric|min:0|max:10',
+            'comentario'   => 'nullable|string|max:500',
+            'evidencias'   => 'nullable|array',
+            'evidencias.*' => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
         ], [
             'nota_nueva.required' => 'Debes ingresar la nota correcta.',
             'nota_nueva.numeric'  => 'La nota debe ser un número válido.',
             'nota_nueva.min'      => 'La nota no puede ser menor a 0.',
             'nota_nueva.max'      => 'La nota no puede ser mayor a 10.',
+            'evidencias.*.mimes'  => 'Solo se permiten archivos JPG, PNG o PDF.',
+            'evidencias.*.max'    => 'Cada archivo no puede superar los 5MB.',
         ]);
+
+        // Guardar evidencias del admin
+        if ($request->hasFile('evidencias')) {
+            foreach ($request->file('evidencias') as $index => $archivo) {
+                if ($archivo->isValid()) {
+                    $extension = $archivo->getClientOriginalExtension();
+                    $nombreArchivo = 'evidencia_admin_' . $id . '_' . time() . '_' . $index . '.' . $extension;
+                    $rutaArchivo = $archivo->storeAs('evidencias', $nombreArchivo, 'gcs');
+                    DB::table('evidencias')->insert([
+                        'solicitud_id' => $id,
+                        'usuario_id'   => Auth::id(),
+                        'archivo'      => $rutaArchivo,
+                        'descripcion'  => 'Evidencia adjuntada por admin',
+                        'fecha'        => now(),
+                    ]);
+                }
+            }
+        }
 
         // Registrar en aprobaciones
         DB::table('aprobaciones')->insert([

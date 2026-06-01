@@ -157,26 +157,28 @@
         </div>
         @endif
 
-        {{-- Evidencia del docente --}}
-        @if($evidenciaDocente)
-        <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                <i class="fas fa-paperclip mr-1"></i> Evidencia del Docente
-            </p>
-            <div class="flex items-center gap-3 mt-1">
-                <a href="{{ route('evidencia.ver', $evidenciaDocente->id) }}" target="_blank"
-                    style="color: #5D0A28;"
-                    class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
-                    <i class="fas fa-eye"></i> Ver
-                </a>
-                <a href="{{ route('evidencia.descargar', $evidenciaDocente->id) }}"
-                    style="color: #5D0A28;"
-                    class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
-                    <i class="fas fa-download"></i> Descargar
-                </a>
+        {{-- EVIDENCIAS POR ROL --}}
+        @foreach([
+            ['col' => $evidenciasEstudiante, 'titulo' => 'Evidencia del Estudiante', 'color' => 'blue'],
+            ['col' => $evidenciasDocente, 'titulo' => 'Evidencia del Docente', 'color' => 'gray'],
+            ['col' => $evidenciasCoordinador, 'titulo' => 'Evidencia del Coordinador', 'color' => 'purple'],
+            ['col' => $evidenciasAdmin, 'titulo' => 'Tu Evidencia Adjunta', 'color' => 'green'],
+        ] as $grupo)
+            @if($grupo['col']->count())
+            <div class="bg-{{ $grupo['color'] }}-50 border border-{{ $grupo['color'] }}-200 rounded-xl p-5 mb-6">
+                <p class="text-xs font-bold text-{{ $grupo['color'] }}-500 uppercase tracking-wider mb-2">
+                    <i class="fas fa-paperclip mr-1"></i> {{ $grupo['titulo'] }} ({{ $grupo['col']->count() }} archivo{{ $grupo['col']->count() > 1 ? 's' : '' }})
+                </p>
+                @foreach($grupo['col'] as $ev)
+                <div class="flex items-center gap-3 mt-2 {{ !$loop->first ? 'border-t border-' . $grupo['color'] . '-100 pt-2' : '' }}">
+                    <a href="{{ route('evidencia.ver', $ev->id) }}" target="_blank" style="color: #5D0A28;" class="text-sm font-bold hover:underline inline-flex items-center gap-1.5"><i class="fas fa-eye"></i> Ver</a>
+                    <a href="{{ route('evidencia.descargar', $ev->id) }}" style="color: #5D0A28;" class="text-sm font-bold hover:underline inline-flex items-center gap-1.5"><i class="fas fa-download"></i> Descargar</a>
+                    <span class="text-xs text-gray-400">{{ \Carbon\Carbon::parse($ev->fecha)->format('d/m/Y H:i') }}</span>
+                </div>
+                @endforeach
             </div>
-        </div>
-        @endif
+            @endif
+        @endforeach
 
         {{-- ══════════════════════════════════════════════════════════════ --}}
         {{-- FORMULARIO DE CORRECCIÓN                                       --}}
@@ -207,7 +209,7 @@
                     </h3>
                     <div class="flex items-center justify-center gap-8 flex-wrap">
                         <div class="text-center">
-                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nota Anterior</p>
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nota Propuesta</p>
                             <p class="text-4xl font-extrabold text-red-500">{{ $historialNota->nota_anterior }}</p>
                         </div>
                         <div class="text-center"><i class="fas fa-arrow-right text-3xl text-gray-400"></i></div>
@@ -240,6 +242,7 @@
 
             <form action="/admin/solicitud/{{ $solicitud->id }}/finalizar"
                 method="POST"
+                enctype="multipart/form-data"
                 class="p-6 space-y-6">
                 @csrf
 
@@ -276,6 +279,22 @@
                         placeholder="Ej: Nota corregida según registro del docente para Evaluación 3...">{{ old('comentario') }}</textarea>
                 </div>
 
+                {{-- Evidencia (drag-and-drop, multiples archivos) --}}
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 uppercase mb-1">
+                        Adjuntar Evidencia
+                        <span class="text-gray-400 font-normal normal-case ml-1">(Opcional — JPG, PNG, PDF — máx. 5MB por archivo)</span>
+                    </label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition cursor-pointer" id="zona_evidencia_admin">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-sm text-gray-500">Haz clic o arrastra archivos aquí</p>
+                        <p class="text-xs text-gray-400 mt-1 italic">Puede agregar varios archivos</p>
+                    </div>
+                    <input type="file" id="input_selector_admin" accept=".jpg,.jpeg,.png,.pdf" multiple class="hidden">
+                    <div id="contenedor_inputs_admin"></div>
+                    <div id="lista_archivos_admin" class="hidden mt-3 space-y-1.5"></div>
+                </div>
+
                 {{-- Botón finalizar --}}
                 <div class="flex gap-4 pt-2">
                     <button type="submit" id="btn_finalizar"
@@ -298,6 +317,60 @@
     </div>
 
     <script>
+        // Gestor de archivos del admin
+        var archivosAdmin = [];
+        var zonaAdmin = document.getElementById('zona_evidencia_admin');
+        var inputSelectorAdmin = document.getElementById('input_selector_admin');
+        var listaDivAdmin = document.getElementById('lista_archivos_admin');
+        var contenedorInputsAdmin = document.getElementById('contenedor_inputs_admin');
+
+        if (zonaAdmin) {
+            zonaAdmin.addEventListener('click', function () { inputSelectorAdmin.click(); });
+            inputSelectorAdmin.addEventListener('change', function () { agregarArchivosAdmin(this.files); this.value = ''; });
+
+            zonaAdmin.addEventListener('dragover', function (e) { e.preventDefault(); this.style.borderColor = '#5D0A28'; this.style.backgroundColor = '#fff5f7'; });
+            zonaAdmin.addEventListener('dragleave', function (e) { e.preventDefault(); this.style.backgroundColor = ''; this.style.borderColor = '#d1d5db'; });
+            zonaAdmin.addEventListener('drop', function (e) { e.preventDefault(); this.style.backgroundColor = ''; this.style.borderColor = '#d1d5db'; if (e.dataTransfer.files.length > 0) agregarArchivosAdmin(e.dataTransfer.files); });
+        }
+
+        function agregarArchivosAdmin(fileList) {
+            var extPermitidas = ['jpg', 'jpeg', 'png', 'pdf'];
+            for (var i = 0; i < fileList.length; i++) {
+                var archivo = fileList[i]; var ext = archivo.name.split('.').pop().toLowerCase();
+                if (extPermitidas.indexOf(ext) === -1) { alert('"' + archivo.name + '" no es un formato permitido.'); continue; }
+                if (archivo.size > 5 * 1024 * 1024) { alert('"' + archivo.name + '" supera los 5MB.'); continue; }
+                var dup = false;
+                for (var j = 0; j < archivosAdmin.length; j++) { if (archivosAdmin[j].name === archivo.name && archivosAdmin[j].size === archivo.size) { dup = true; break; } }
+                if (!dup) archivosAdmin.push(archivo);
+            }
+            renderListaAdmin(); sincronizarInputsAdmin();
+        }
+        function eliminarArchivoAdmin(idx) { archivosAdmin.splice(idx, 1); renderListaAdmin(); sincronizarInputsAdmin(); }
+        function eliminarTodosAdmin() { archivosAdmin = []; renderListaAdmin(); sincronizarInputsAdmin(); }
+        function renderListaAdmin() {
+            listaDivAdmin.innerHTML = '';
+            if (archivosAdmin.length === 0) { listaDivAdmin.classList.add('hidden'); return; }
+            listaDivAdmin.classList.remove('hidden');
+            var enc = document.createElement('div'); enc.className = 'flex items-center justify-between';
+            enc.innerHTML = '<p class="text-xs font-bold text-gray-600 uppercase tracking-wide flex items-center gap-1.5"><i class="fas fa-paperclip"></i> ' + archivosAdmin.length + ' archivo' + (archivosAdmin.length > 1 ? 's' : '') + ' adjunto' + (archivosAdmin.length > 1 ? 's' : '') + '</p><button type="button" onclick="eliminarTodosAdmin()" class="text-xs text-red-500 hover:text-red-700 font-bold"><i class="fas fa-trash-alt mr-1"></i>Quitar todos</button>';
+            listaDivAdmin.appendChild(enc);
+            for (var i = 0; i < archivosAdmin.length; i++) {
+                var a = archivosAdmin[i]; var t = (a.size / 1024 / 1024).toFixed(2); var ex = a.name.split('.').pop().toUpperCase();
+                var ic = ex === 'PDF' ? 'fa-file-pdf text-red-500' : 'fa-file-image text-blue-500';
+                var f = document.createElement('div'); f.className = 'flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm';
+                f.innerHTML = '<i class="fas ' + ic + ' text-lg"></i><span class="font-medium text-gray-700 truncate flex-1">' + a.name + '</span><span class="text-xs text-gray-400 font-mono whitespace-nowrap">' + t + ' MB</span><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">' + ex + '</span><button type="button" onclick="eliminarArchivoAdmin(' + i + ')" class="text-red-400 hover:text-red-600 ml-1" title="Quitar"><i class="fas fa-times-circle"></i></button>';
+                listaDivAdmin.appendChild(f);
+            }
+        }
+        function sincronizarInputsAdmin() {
+            contenedorInputsAdmin.innerHTML = '';
+            for (var i = 0; i < archivosAdmin.length; i++) {
+                var dt = new DataTransfer(); dt.items.add(archivosAdmin[i]);
+                var inp = document.createElement('input'); inp.type = 'file'; inp.name = 'evidencias[]'; inp.files = dt.files; inp.style.display = 'none';
+                contenedorInputsAdmin.appendChild(inp);
+            }
+        }
+
         var inputNota = document.getElementById('input_nota_nueva');
         if (inputNota) inputNota.addEventListener('input', function () {
             var valor      = parseFloat(this.value);

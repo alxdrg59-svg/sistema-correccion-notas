@@ -303,7 +303,7 @@
         <table>
             <tr>
                 <td class="col-nota">
-                    <div class="label-nota">Nota Anterior</div>
+                    <div class="label-nota">Nota Propuesta</div>
                     <div class="valor-anterior">{{ number_format($historialNota->nota_anterior, 2) }}</div>
                 </td>
                 <td class="col-flecha">&#10140;</td>
