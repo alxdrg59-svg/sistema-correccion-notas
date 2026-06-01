@@ -30,7 +30,7 @@
                     $etiquetas = [
                         'pendiente_coordinador' => 'Pendiente de tu revisión',
                         'rechazado_coordinador' => 'Rechazada por ti',
-                        'pendiente_admin'       => 'Aprobada → en Admin',
+                        'pendiente_admin'       => 'Aprobada → Admin. Académico',
                         'finalizado'            => 'Finalizada',
                     ];
                     $estadoKey = $solicitud->estado;
@@ -271,14 +271,14 @@
             <i class="fas fa-lock text-4xl text-yellow-500 mb-3"></i>
             <p class="font-bold text-yellow-800 text-lg">Edición bloqueada</p>
             <p class="text-yellow-700 text-sm mt-1">
-                El administrador ya procesó esta solicitud. Ya no puedes modificar tu decisión.
+                El administrador académico ya procesó esta solicitud. Ya no puedes modificar tu decisión.
             </p>
         </div>
         @else
         <div class="bg-gray-50 border-2 border-gray-200 rounded-xl p-6 text-center">
             <i class="fas fa-check-double text-4xl text-gray-400 mb-3"></i>
             <p class="font-bold text-gray-600 text-lg">Esta solicitud ya fue procesada</p>
-            <p class="text-gray-500 text-sm mt-1">El flujo continúa con el administrador.</p>
+            <p class="text-gray-500 text-sm mt-1">El flujo continúa con el administrador académico.</p>
         </div>
         @endif
 

@@ -91,7 +91,7 @@
                                         'rechazado_docente'     => 'Rechazada',
                                         'pendiente_coordinador' => 'En revisión (Coordinador)',
                                         'rechazado_coordinador' => 'Rechazada',
-                                        'pendiente_admin'       => 'En revisión (Admin)',
+                                        'pendiente_admin'       => 'En revisión (Admin. Académico)',
                                         'finalizado'            => 'Aprobada y Finalizada',
                                     ];
                                     $estadoKey = $solicitud->estado;
@@ -160,7 +160,7 @@
                 <i class="fas fa-hourglass-half text-[10px]"></i> En revisión (Coordinador)
             </span>
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-blue-100 text-blue-700 border-blue-200 font-semibold">
-                <i class="fas fa-hourglass-half text-[10px]"></i> En revisión (Admin)
+                <i class="fas fa-hourglass-half text-[10px]"></i> En revisión (Admin. Académico)
             </span>
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-green-100 text-green-700 border-green-200 font-semibold">
                 <i class="fas fa-check-circle text-[10px]"></i> Aprobada y Finalizada

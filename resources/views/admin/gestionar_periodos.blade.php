@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('title', 'Gestionar Periodos')
-@section('subtitle', 'Panel Administrador')
-@section('rol', 'Admin')
+@section('subtitle', 'Panel Admin. Académico')
+@section('rol', 'Admin. Académico')
 @section('body-class', 'pb-12')
 
 @section('content')

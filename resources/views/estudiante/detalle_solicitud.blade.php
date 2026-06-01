@@ -35,7 +35,7 @@
                         'rechazado_docente'     => 'Rechazada por Docente',
                         'pendiente_coordinador' => 'En revisión (Coordinador)',
                         'rechazado_coordinador' => 'Rechazada por Coordinador',
-                        'pendiente_admin'       => 'En revisión (Admin)',
+                        'pendiente_admin'       => 'En revisión (Admin. Académico)',
                         'finalizado'            => 'Aprobada y Finalizada',
                     ];
                     $iconos = [

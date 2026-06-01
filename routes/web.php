@@ -58,6 +58,8 @@ Route::get('/docente/solicitud/{id}', [DocenteController::class, 'verDetalle'])
 Route::post('/docente/solicitud/{id}/decision', [DocenteController::class, 'procesarDecision'])
     ->middleware(['auth', 'rol:docente']);
 
+Route::get('/docente/solicitud/{id}/pdf', [DocenteController::class, 'exportarPdf'])
+    ->middleware(['auth', 'rol:docente']);
 
 // Rutas para coordinador
 Route::get('/coordinador/dashboard', [CoordinadorController::class, 'index'])
@@ -71,7 +73,10 @@ Route::get('/coordinador/solicitud/{id}', [CoordinadorController::class, 'verDet
 Route::post('/coordinador/solicitud/{id}/decision', [CoordinadorController::class, 'procesarDecision'])
     ->middleware(['auth', 'rol:coordinador']);
 
-    // Rutas para admin
+Route::get('/coordinador/solicitud/{id}/pdf', [CoordinadorController::class, 'exportarPdf'])
+    ->middleware(['auth', 'rol:coordinador']);
+
+// Rutas para admin
 Route::get('/admin/dashboard', [AdminController::class, 'index'])
     ->middleware(['auth', 'rol:admin']);
 

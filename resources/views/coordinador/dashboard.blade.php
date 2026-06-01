@@ -92,7 +92,7 @@
                                     $etiquetas = [
                                         'pendiente_coordinador' => 'Pendiente',
                                         'rechazado_coordinador' => 'Rechazada',
-                                        'pendiente_admin'       => 'Aprobada → Admin',
+                                        'pendiente_admin'       => 'Aprobada → Admin. Académico',
                                         'finalizado'            => 'Finalizada',
                                     ];
                                     $estadoKey = $solicitud->estado;
@@ -111,13 +111,21 @@
 
                             {{-- Botón revisar --}}
                             <td class="p-4 text-right">
-                                <a href="/coordinador/solicitud/{{ $solicitud->id }}"
-                                    style="background-color: #5D0A28;"
-                                    onmouseover="this.style.backgroundColor='#4A0820'"
-                                    onmouseout="this.style.backgroundColor='#5D0A28'"
-                                    class="text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition inline-flex items-center gap-1.5">
-                                    <i class="fas fa-search"></i> Revisar
-                                </a>
+                                <div class="flex flex-col items-end gap-1.5">
+                                    <a href="/coordinador/solicitud/{{ $solicitud->id }}"
+                                        style="background-color: #5D0A28;"
+                                        onmouseover="this.style.backgroundColor='#4A0820'"
+                                        onmouseout="this.style.backgroundColor='#5D0A28'"
+                                        class="text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition inline-flex items-center gap-1.5">
+                                        <i class="fas fa-search"></i> Revisar
+                                    </a>
+                                    @if($solicitud->estado === 'finalizado')
+                                        <a href="/coordinador/solicitud/{{ $solicitud->id }}/pdf"
+                                            class="text-green-700 hover:text-green-900 font-bold text-xs uppercase tracking-widest transition hover:underline">
+                                            <i class="fas fa-file-pdf mr-1"></i> Descargar PDF
+                                        </a>
+                                    @endif
+                                </div>
                             </td>
 
                         </tr>

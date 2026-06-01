@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Panel Administrador')
-@section('subtitle', 'Panel Administrador')
-@section('rol', 'Admin')
+@section('title', 'Panel Admin. Académico')
+@section('subtitle', 'Panel Admin. Académico')
+@section('rol', 'Admin. Académico')
 
 @section('content')
     <div class="container mx-auto mt-2 p-4">
@@ -134,7 +134,7 @@
                                         'rechazado_docente'     => 'Rechazada',
                                         'pendiente_coordinador' => 'Pendiente Coordinador',
                                         'rechazado_coordinador' => 'Rechazada',
-                                        'pendiente_admin'       => 'Pendiente Admin',
+                                        'pendiente_admin'       => 'Pendiente Admin. Académico',
                                         'finalizado'            => 'Finalizada',
                                     ];
                                     $estilo = $clases[$solicitud->estado] ?? 'bg-gray-100 text-gray-500 border-gray-200';

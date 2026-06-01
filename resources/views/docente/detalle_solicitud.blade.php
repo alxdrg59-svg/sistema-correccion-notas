@@ -36,7 +36,7 @@
                         'rechazado_docente'     => 'Rechazada por ti',
                         'pendiente_coordinador' => 'Aprobada → en Coordinador',
                         'rechazado_coordinador' => 'Rechazada por Coordinador',
-                        'pendiente_admin'       => 'En revisión Admin',
+                        'pendiente_admin'       => 'En revisión (Admin. Académico)',
                         'finalizado'            => 'Finalizada',
                     ];
                     $estadoKey = $solicitud->estado;
@@ -225,7 +225,7 @@
                 {{-- Campo privado para el admin: solo visible si aprueba --}}
                 <div id="campo_nota_admin" style="display:none;">
                     <label class="block text-sm font-bold text-gray-700 uppercase mb-1">
-                        Nota sugerida para el Administrador
+                        Nota sugerida para el Administrador Académico
                         <span class="text-red-500 ml-1">(Obligatorio al aprobar)</span>
                         </label>
                         <textarea name="nota_sugerida_admin" rows="2"
