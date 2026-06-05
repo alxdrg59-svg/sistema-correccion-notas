@@ -20,8 +20,10 @@ class AuthController extends Controller
         $password = $request->password;
         $autenticado = false;
 
-        if (ctype_digit($identificador)) {
-            $user = User::where('carnet', $identificador)->first();
+        $soloDigitos = preg_replace('/[^0-9]/', '', $identificador);
+        if (strlen($soloDigitos) === strlen($identificador) && strlen($identificador) > 0 || preg_match('/^\d{2}-\d{4}-\d{4}$/', $identificador)) {
+            $carnetSinGuiones = $soloDigitos;
+            $user = User::whereRaw("REPLACE(carnet, '-', '') = ?", [$carnetSinGuiones])->first();
             if ($user && Hash::check($password, $user->password)) {
                 Auth::login($user);
                 $request->session()->regenerate();
