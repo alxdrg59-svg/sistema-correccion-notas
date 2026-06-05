@@ -29,6 +29,7 @@
                         'rechazado_coordinador' => 'bg-red-100    text-red-700    border-red-300',
                         'pendiente_admin'       => 'bg-blue-100   text-blue-700   border-blue-300',
                         'finalizado'            => 'bg-green-100  text-green-700  border-green-300',
+                        'requiere_evidencia'    => 'bg-purple-100 text-purple-700 border-purple-300',
                     ];
                     $etiquetas = [
                         'pendiente_docente'     => 'En revisión (Docente)',
@@ -37,6 +38,7 @@
                         'rechazado_coordinador' => 'Rechazada por Coordinador',
                         'pendiente_admin'       => 'En revisión (Admin. Académico)',
                         'finalizado'            => 'Aprobada y Finalizada',
+                        'requiere_evidencia'    => 'El docente solicita más evidencia',
                     ];
                     $iconos = [
                         'pendiente_docente'     => 'fa-hourglass-half',
@@ -45,6 +47,7 @@
                         'rechazado_coordinador' => 'fa-times-circle',
                         'pendiente_admin'       => 'fa-hourglass-half',
                         'finalizado'            => 'fa-check-circle',
+                        'requiere_evidencia'    => 'fa-file-upload',
                     ];
                     $estadoKey = $solicitud->estado;
                     $estilo    = $clases[$estadoKey]    ?? 'bg-gray-100 text-gray-600 border-gray-300';
@@ -148,6 +151,59 @@
                 </p>
             </div>
             @endif
+        @endif
+
+        {{-- FORMULARIO DE EVIDENCIA SOLICITADA POR DOCENTE --}}
+        @if($solicitud->estado === 'requiere_evidencia')
+        <div class="bg-purple-50 border-2 border-purple-300 rounded-xl shadow-md overflow-hidden mb-6">
+            <div class="px-6 py-4 bg-purple-600">
+                <h2 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
+                    <i class="fas fa-file-upload"></i> El Docente Solicita Más Evidencia
+                </h2>
+            </div>
+            <div class="p-6">
+                @if($solicitudEvidencia)
+                <div class="bg-white border border-purple-200 rounded-lg p-4 mb-5">
+                    <p class="text-xs font-bold text-purple-500 uppercase tracking-wider mb-1">
+                        <i class="fas fa-comment-dots mr-1"></i> Mensaje del Docente
+                        ({{ $solicitudEvidencia->actor_nombre }} — {{ \Carbon\Carbon::parse($solicitudEvidencia->fecha)->format('d/m/Y H:i') }})
+                    </p>
+                    <p class="text-gray-700 text-sm leading-relaxed italic">
+                        "{{ $solicitudEvidencia->comentario }}"
+                    </p>
+                </div>
+                @endif
+
+                <form action="/estudiante/solicitud/{{ $solicitud->id }}/agregar-evidencia"
+                    method="POST"
+                    enctype="multipart/form-data"
+                    class="space-y-4">
+                    @csrf
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 uppercase mb-1">
+                            Adjuntar Evidencia
+                            <span class="text-red-500 ml-1">(Obligatorio)</span>
+                            <span class="text-gray-400 font-normal normal-case ml-1">— JPG, PNG, PDF — máx. 5MB por archivo</span>
+                        </label>
+                        <div class="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center transition cursor-pointer hover:border-purple-500"
+                            id="zona_evidencia_est">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-purple-400 mb-2"></i>
+                            <p class="text-sm text-gray-500">Haz clic o arrastra archivos aquí</p>
+                            <p class="text-xs text-gray-400 mt-1 italic">Puede agregar varios archivos</p>
+                        </div>
+                        <input type="file" id="input_selector_est" accept=".jpg,.jpeg,.png,.pdf" multiple class="hidden">
+                        <div id="contenedor_inputs_est"></div>
+                        <div id="lista_archivos_est" class="hidden mt-3 space-y-1.5"></div>
+                    </div>
+
+                    <button type="submit" id="btn_enviar_evidencia"
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-lg font-bold shadow-lg transition uppercase tracking-widest text-sm">
+                        <i class="fas fa-paper-plane mr-2"></i> Enviar Evidencia al Docente
+                    </button>
+                </form>
+            </div>
+        </div>
         @endif
 
         {{-- RESULTADO FINAL DE LA CORRECCIÓN --}}
@@ -331,3 +387,106 @@
 
     </div>
 @endsection
+
+@if($solicitud->estado === 'requiere_evidencia')
+@section('scripts')
+<script>
+    var archivosEst = [];
+    var zonaEst = document.getElementById('zona_evidencia_est');
+    var inputSelectorEst = document.getElementById('input_selector_est');
+    var listaDivEst = document.getElementById('lista_archivos_est');
+    var contenedorInputsEst = document.getElementById('contenedor_inputs_est');
+    var extPermitidas = ['jpg', 'jpeg', 'png', 'pdf'];
+
+    if (zonaEst) {
+        zonaEst.addEventListener('click', function () { inputSelectorEst.click(); });
+        inputSelectorEst.addEventListener('change', function () {
+            agregarArchivosEst(this.files);
+            this.value = '';
+        });
+        zonaEst.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            this.style.borderColor = '#7c3aed';
+            this.style.backgroundColor = '#faf5ff';
+        });
+        zonaEst.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            this.style.backgroundColor = '';
+            this.style.borderColor = '#c4b5fd';
+        });
+        zonaEst.addEventListener('drop', function (e) {
+            e.preventDefault();
+            this.style.backgroundColor = '';
+            this.style.borderColor = '#c4b5fd';
+            if (e.dataTransfer.files.length > 0) agregarArchivosEst(e.dataTransfer.files);
+        });
+    }
+
+    function agregarArchivosEst(fileList) {
+        for (var i = 0; i < fileList.length; i++) {
+            var archivo = fileList[i];
+            var ext = archivo.name.split('.').pop().toLowerCase();
+            if (extPermitidas.indexOf(ext) === -1) { alert('"' + archivo.name + '" no es un formato permitido.'); continue; }
+            if (archivo.size > 5 * 1024 * 1024) { alert('"' + archivo.name + '" supera los 5MB.'); continue; }
+            var dup = false;
+            for (var j = 0; j < archivosEst.length; j++) {
+                if (archivosEst[j].name === archivo.name && archivosEst[j].size === archivo.size) { dup = true; break; }
+            }
+            if (!dup) archivosEst.push(archivo);
+        }
+        renderListaEst();
+        sincronizarInputsEst();
+    }
+
+    function eliminarArchivoEst(idx) {
+        archivosEst.splice(idx, 1);
+        renderListaEst();
+        sincronizarInputsEst();
+    }
+
+    function eliminarTodosEst() {
+        archivosEst = [];
+        renderListaEst();
+        sincronizarInputsEst();
+    }
+
+    function renderListaEst() {
+        listaDivEst.innerHTML = '';
+        if (archivosEst.length === 0) { listaDivEst.classList.add('hidden'); return; }
+        listaDivEst.classList.remove('hidden');
+        var enc = document.createElement('div');
+        enc.className = 'flex items-center justify-between';
+        enc.innerHTML = '<p class="text-xs font-bold text-gray-600 uppercase tracking-wide flex items-center gap-1.5">' +
+            '<i class="fas fa-paperclip"></i> ' + archivosEst.length + ' archivo' + (archivosEst.length > 1 ? 's' : '') +
+            ' adjunto' + (archivosEst.length > 1 ? 's' : '') + '</p>' +
+            '<button type="button" onclick="eliminarTodosEst()" class="text-xs text-red-500 hover:text-red-700 font-bold"><i class="fas fa-trash-alt mr-1"></i>Quitar todos</button>';
+        listaDivEst.appendChild(enc);
+        for (var i = 0; i < archivosEst.length; i++) {
+            var a = archivosEst[i];
+            var t = (a.size / 1024 / 1024).toFixed(2);
+            var ex = a.name.split('.').pop().toUpperCase();
+            var ic = ex === 'PDF' ? 'fa-file-pdf text-red-500' : 'fa-file-image text-blue-500';
+            var f = document.createElement('div');
+            f.className = 'flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm';
+            f.innerHTML = '<i class="fas ' + ic + ' text-lg"></i>' +
+                '<span class="font-medium text-gray-700 truncate flex-1">' + a.name + '</span>' +
+                '<span class="text-xs text-gray-400 font-mono whitespace-nowrap">' + t + ' MB</span>' +
+                '<span class="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">' + ex + '</span>' +
+                '<button type="button" onclick="eliminarArchivoEst(' + i + ')" class="text-red-400 hover:text-red-600 ml-1" title="Quitar"><i class="fas fa-times-circle"></i></button>';
+            listaDivEst.appendChild(f);
+        }
+    }
+
+    function sincronizarInputsEst() {
+        contenedorInputsEst.innerHTML = '';
+        for (var i = 0; i < archivosEst.length; i++) {
+            var dt = new DataTransfer();
+            dt.items.add(archivosEst[i]);
+            var inp = document.createElement('input');
+            inp.type = 'file'; inp.name = 'evidencias[]'; inp.files = dt.files; inp.style.display = 'none';
+            contenedorInputsEst.appendChild(inp);
+        }
+    }
+</script>
+@endsection
+@endif

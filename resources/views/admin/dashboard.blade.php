@@ -15,13 +15,19 @@
                     Todas las solicitudes de corrección de nota del sistema.
                 </p>
             </div>
-            <a href="/admin/periodos"
-                style="background-color: #5D0A28;"
-                onmouseover="this.style.backgroundColor='#4A0820'"
-                onmouseout="this.style.backgroundColor='#5D0A28'"
-                class="text-white px-5 py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition inline-flex items-center gap-2 shadow-lg">
-                <i class="fas fa-calendar-alt"></i> Gestionar Periodos
-            </a>
+            <div class="flex gap-3">
+                <a href="/admin/estadisticas"
+                    class="bg-gray-700 hover:bg-gray-800 text-white px-5 py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition inline-flex items-center gap-2 shadow-lg">
+                    <i class="fas fa-chart-bar"></i> Estadísticas
+                </a>
+                <a href="/admin/periodos"
+                    style="background-color: #5D0A28;"
+                    onmouseover="this.style.backgroundColor='#4A0820'"
+                    onmouseout="this.style.backgroundColor='#5D0A28'"
+                    class="text-white px-5 py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition inline-flex items-center gap-2 shadow-lg">
+                    <i class="fas fa-calendar-alt"></i> Gestionar Periodos
+                </a>
+            </div>
         </div>
 
         {{-- Tarjetas resumen --}}
@@ -44,7 +50,60 @@
             </div>
         </div>
 
-        {{-- Filtros --}}
+        {{-- Filtros avanzados (server-side) --}}
+        <div class="bg-white rounded-xl shadow-md p-5 mb-6">
+            <form action="/admin/dashboard" method="GET" class="flex flex-wrap items-end gap-4">
+                <div class="flex-1 min-w-[150px]">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Facultad</label>
+                    <select name="facultad_id" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
+                        <option value="">Todas</option>
+                        @foreach($facultades as $fac)
+                            <option value="{{ $fac->id }}" {{ request('facultad_id') == $fac->id ? 'selected' : '' }}>{{ $fac->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Evaluación</label>
+                    <select name="evaluacion" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
+                        <option value="">Todas</option>
+                        @foreach($evaluaciones as $eval)
+                            <option value="{{ $eval }}" {{ request('evaluacion') == $eval ? 'selected' : '' }}>{{ $eval }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ciclo</label>
+                    <select name="ciclo" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
+                        <option value="">Todos</option>
+                        @foreach($ciclos as $cic)
+                            <option value="{{ $cic }}" {{ request('ciclo') == $cic ? 'selected' : '' }}>{{ $cic }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[120px]">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Año</label>
+                    <select name="anio" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
+                        <option value="">Todos</option>
+                        @foreach($anios as $a)
+                            <option value="{{ $a }}" {{ request('anio') == $a ? 'selected' : '' }}>{{ $a }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit"
+                        style="background-color: #5D0A28;"
+                        class="text-white px-5 py-2 rounded-lg text-sm font-bold uppercase tracking-wide transition hover:opacity-90">
+                        <i class="fas fa-filter mr-1"></i> Filtrar
+                    </button>
+                    <a href="/admin/dashboard"
+                        class="px-5 py-2 rounded-lg text-sm font-bold uppercase tracking-wide border-2 border-gray-300 text-gray-500 hover:bg-gray-100 transition">
+                        Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        {{-- Filtros por estado (client-side) --}}
         <div class="mb-4 flex flex-wrap gap-2" id="filtros">
             <button onclick="filtrar('todas')" class="filtro-btn activo px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="todas">Todas</button>
             <button onclick="filtrar('pendiente')" class="filtro-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="pendiente">Pendientes</button>
@@ -128,6 +187,7 @@
                                         'rechazado_coordinador' => 'bg-red-100 text-red-700 border-red-200',
                                         'pendiente_admin'       => 'bg-blue-100 text-blue-700 border-blue-200',
                                         'finalizado'            => 'bg-green-100 text-green-700 border-green-200',
+                                        'requiere_evidencia'    => 'bg-purple-100 text-purple-700 border-purple-200',
                                     ];
                                     $etiquetas = [
                                         'pendiente_docente'     => 'Pendiente Docente',
@@ -136,6 +196,7 @@
                                         'rechazado_coordinador' => 'Rechazada',
                                         'pendiente_admin'       => 'Pendiente Admin. Académico',
                                         'finalizado'            => 'Finalizada',
+                                        'requiere_evidencia'    => 'Esperando evidencia',
                                     ];
                                     $estilo = $clases[$solicitud->estado] ?? 'bg-gray-100 text-gray-500 border-gray-200';
                                     $etiqueta = $etiquetas[$solicitud->estado] ?? $solicitud->estado;

@@ -44,6 +44,9 @@ Route::get('/estudiante/solicitud/{id}/pdf', [SolicitudController::class, 'expor
 Route::post('/estudiante/solicitud/{id}/cancelar', [SolicitudController::class, 'cancelarSolicitud'])
     ->middleware(['auth', 'rol:estudiante']);
 
+Route::post('/estudiante/solicitud/{id}/agregar-evidencia', [SolicitudController::class, 'agregarEvidencia'])
+    ->middleware(['auth', 'rol:estudiante']);
+
 // Ruta para cancelar una solicitud (solo si está en estado pendiente_docente o pendiente_coordinador)
 Route::get('/docente/dashboard', [DocenteController::class, 'index'])
     ->middleware(['auth', 'rol:docente']);
@@ -95,6 +98,12 @@ Route::post('/admin/periodos/{id}/actualizar', [AdminController::class, 'actuali
     ->middleware(['auth', 'rol:admin']);
 
 Route::get('/admin/periodos', [AdminController::class, 'periodos'])
+    ->middleware(['auth', 'rol:admin']);
+
+Route::get('/admin/estadisticas', [AdminController::class, 'estadisticas'])
+    ->middleware(['auth', 'rol:admin']);
+
+Route::get('/admin/buscar-estudiante', [AdminController::class, 'buscarEstudiante'])
     ->middleware(['auth', 'rol:admin']);
 
 Route::post('/admin/ciclos/{id}/actualizar', [AdminController::class, 'actualizarCiclo'])

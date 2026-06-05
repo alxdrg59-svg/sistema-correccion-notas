@@ -77,6 +77,7 @@
                                         'rechazado_coordinador' => 'bg-red-100    text-red-700    border-red-200',
                                         'pendiente_admin'       => 'bg-blue-100   text-blue-700   border-blue-200',
                                         'finalizado'            => 'bg-green-100  text-green-700  border-green-200',
+                                        'requiere_evidencia'    => 'bg-purple-100 text-purple-700 border-purple-200',
                                     ];
                                     $iconos = [
                                         'pendiente_docente'     => 'fa-hourglass-half',
@@ -85,6 +86,7 @@
                                         'rechazado_coordinador' => 'fa-times-circle',
                                         'pendiente_admin'       => 'fa-hourglass-half',
                                         'finalizado'            => 'fa-check-circle',
+                                        'requiere_evidencia'    => 'fa-file-upload',
                                     ];
                                     $etiquetas = [
                                         'pendiente_docente'     => 'En revisión (Docente)',
@@ -93,6 +95,7 @@
                                         'rechazado_coordinador' => 'Rechazada',
                                         'pendiente_admin'       => 'En revisión (Admin. Académico)',
                                         'finalizado'            => 'Aprobada y Finalizada',
+                                        'requiere_evidencia'    => 'Requiere evidencia',
                                     ];
                                     $estadoKey = $solicitud->estado;
                                     $estilo    = $clases[$estadoKey]    ?? 'bg-gray-100 text-gray-500 border-gray-200';
@@ -167,6 +170,9 @@
             </span>
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-red-100 text-red-700 border-red-200 font-semibold">
                 <i class="fas fa-times-circle text-[10px]"></i> Rechazada
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-purple-100 text-purple-700 border-purple-200 font-semibold">
+                <i class="fas fa-file-upload text-[10px]"></i> Requiere evidencia
             </span>
         </div>
 

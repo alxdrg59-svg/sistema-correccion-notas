@@ -14,9 +14,9 @@ class AdminController extends Controller
     // DASHBOARD: Solo muestra solicitudes en pendiente_admin
     // O sea las que el coordinador ya aprobó
     // =====================================================
-    public function index()
+    public function index(Request $request)
     {
-        $solicitudes = DB::table('solicitudes_correccion')
+        $query = DB::table('solicitudes_correccion')
             ->join('materias', 'solicitudes_correccion.materia_id', '=', 'materias.id')
             ->join('carreras', 'materias.carrera_id', '=', 'carreras.id')
             ->join('facultades', 'carreras.facultad_id', '=', 'facultades.id')
@@ -30,13 +30,29 @@ class AdminController extends Controller
                 'solicitudes_correccion.estado',
                 'solicitudes_correccion.fecha_solicitud',
                 'solicitudes_correccion.es_excepcion',
+                'facultades.id as facultad_id',
                 'materias.nombre as materia_nombre',
                 'carreras.nombre as carrera_nombre',
                 'facultades.nombre as facultad_nombre',
                 'estudiantes.nombre as estudiante_nombre',
                 'estudiantes.carnet as estudiante_carnet',
                 'docentes.nombre as docente_nombre'
-            )
+            );
+
+        if ($request->filled('facultad_id')) {
+            $query->where('facultades.id', $request->facultad_id);
+        }
+        if ($request->filled('evaluacion')) {
+            $query->where('solicitudes_correccion.evaluacion', $request->evaluacion);
+        }
+        if ($request->filled('ciclo')) {
+            $query->where('solicitudes_correccion.ciclo', $request->ciclo);
+        }
+        if ($request->filled('anio')) {
+            $query->whereYear('solicitudes_correccion.fecha_solicitud', $request->anio);
+        }
+
+        $solicitudes = $query
             ->orderByRaw("CASE WHEN solicitudes_correccion.estado = 'pendiente_admin' THEN 0 ELSE 1 END")
             ->orderBy('solicitudes_correccion.fecha_solicitud', 'desc')
             ->get();
@@ -48,7 +64,12 @@ class AdminController extends Controller
             'total'       => $solicitudes->count(),
         ];
 
-        return view('admin.dashboard', compact('solicitudes', 'contadores'));
+        $facultades = DB::table('facultades')->orderBy('nombre')->get();
+        $evaluaciones = DB::table('solicitudes_correccion')->select('evaluacion')->distinct()->orderBy('evaluacion')->pluck('evaluacion');
+        $ciclos = DB::table('solicitudes_correccion')->select('ciclo')->distinct()->orderBy('ciclo')->pluck('ciclo');
+        $anios = DB::table('solicitudes_correccion')->selectRaw('YEAR(fecha_solicitud) as anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
+
+        return view('admin.dashboard', compact('solicitudes', 'contadores', 'facultades', 'evaluaciones', 'ciclos', 'anios'));
     }
 
     // =====================================================
@@ -414,5 +435,104 @@ class AdminController extends Controller
         ))->setPaper('letter');
 
         return $pdf->download('Constancia_SCN-' . str_pad($solicitud->id, 6, '0', STR_PAD_LEFT) . '.pdf');
+    }
+
+    public function estadisticas(Request $request)
+    {
+        $query = DB::table('solicitudes_correccion')
+            ->join('materias', 'solicitudes_correccion.materia_id', '=', 'materias.id')
+            ->join('carreras', 'materias.carrera_id', '=', 'carreras.id')
+            ->join('facultades', 'carreras.facultad_id', '=', 'facultades.id');
+
+        if ($request->filled('evaluacion')) {
+            $query->where('solicitudes_correccion.evaluacion', $request->evaluacion);
+        }
+        if ($request->filled('ciclo')) {
+            $query->where('solicitudes_correccion.ciclo', $request->ciclo);
+        }
+        if ($request->filled('anio')) {
+            $query->whereYear('solicitudes_correccion.fecha_solicitud', $request->anio);
+        }
+
+        $estadisticas = $query
+            ->select(
+                'facultades.id as facultad_id',
+                'facultades.nombre as facultad_nombre',
+                DB::raw('COUNT(*) as total'),
+                DB::raw("SUM(CASE WHEN solicitudes_correccion.estado = 'pendiente_admin' THEN 1 ELSE 0 END) as pendientes"),
+                DB::raw("SUM(CASE WHEN solicitudes_correccion.estado = 'finalizado' THEN 1 ELSE 0 END) as finalizadas"),
+                DB::raw("SUM(CASE WHEN solicitudes_correccion.estado IN ('rechazado_docente', 'rechazado_coordinador') THEN 1 ELSE 0 END) as rechazadas"),
+                DB::raw("SUM(CASE WHEN solicitudes_correccion.es_excepcion = 1 THEN 1 ELSE 0 END) as excepciones")
+            )
+            ->groupBy('facultades.id', 'facultades.nombre')
+            ->orderBy('total', 'desc')
+            ->get();
+
+        $estudiantesPorFacultad = DB::table('usuarios')
+            ->join('carreras', 'usuarios.carrera_id', '=', 'carreras.id')
+            ->join('facultades', 'carreras.facultad_id', '=', 'facultades.id')
+            ->where('usuarios.rol', 'estudiante')
+            ->select('facultades.id as facultad_id', DB::raw('COUNT(*) as total_estudiantes'))
+            ->groupBy('facultades.id')
+            ->pluck('total_estudiantes', 'facultad_id');
+
+        $evaluaciones = DB::table('solicitudes_correccion')->select('evaluacion')->distinct()->orderBy('evaluacion')->pluck('evaluacion');
+        $ciclos = DB::table('solicitudes_correccion')->select('ciclo')->distinct()->orderBy('ciclo')->pluck('ciclo');
+        $anios = DB::table('solicitudes_correccion')->selectRaw('YEAR(fecha_solicitud) as anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
+
+        return view('admin.estadisticas', compact('estadisticas', 'estudiantesPorFacultad', 'evaluaciones', 'ciclos', 'anios'));
+    }
+
+    public function buscarEstudiante(Request $request)
+    {
+        $busqueda = trim($request->q);
+        $estudiante = null;
+        $solicitudes = collect();
+
+        if ($busqueda) {
+            $estudiante = DB::table('usuarios')
+                ->leftJoin('carreras', 'usuarios.carrera_id', '=', 'carreras.id')
+                ->leftJoin('facultades', 'carreras.facultad_id', '=', 'facultades.id')
+                ->where('usuarios.rol', 'estudiante')
+                ->where(function ($q) use ($busqueda) {
+                    $q->where('usuarios.carnet', 'like', '%' . $busqueda . '%')
+                      ->orWhere('usuarios.nombre', 'like', '%' . $busqueda . '%');
+                })
+                ->select(
+                    'usuarios.id', 'usuarios.nombre', 'usuarios.carnet', 'usuarios.correo',
+                    'carreras.nombre as carrera_nombre',
+                    'facultades.nombre as facultad_nombre'
+                )
+                ->first();
+
+            if ($estudiante) {
+                $solicitudes = DB::table('solicitudes_correccion')
+                    ->join('materias', 'solicitudes_correccion.materia_id', '=', 'materias.id')
+                    ->join('usuarios as docentes', 'solicitudes_correccion.docente_id', '=', 'docentes.id')
+                    ->where('solicitudes_correccion.estudiante_id', $estudiante->id)
+                    ->select(
+                        'solicitudes_correccion.id',
+                        'solicitudes_correccion.evaluacion',
+                        'solicitudes_correccion.ciclo',
+                        'solicitudes_correccion.nota_actual',
+                        'solicitudes_correccion.estado',
+                        'solicitudes_correccion.fecha_solicitud',
+                        'solicitudes_correccion.es_excepcion',
+                        'materias.nombre as materia_nombre',
+                        'docentes.nombre as docente_nombre'
+                    )
+                    ->orderBy('solicitudes_correccion.fecha_solicitud', 'desc')
+                    ->get();
+            }
+        }
+
+        $evaluaciones = DB::table('solicitudes_correccion')->select('evaluacion')->distinct()->orderBy('evaluacion')->pluck('evaluacion');
+        $ciclos = DB::table('solicitudes_correccion')->select('ciclo')->distinct()->orderBy('ciclo')->pluck('ciclo');
+        $anios = DB::table('solicitudes_correccion')->selectRaw('YEAR(fecha_solicitud) as anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
+
+        return view('admin.estadisticas', compact('estudiante', 'solicitudes', 'busqueda', 'evaluaciones', 'ciclos', 'anios'))
+            ->with('estadisticas', collect())
+            ->with('estudiantesPorFacultad', collect())
+            ->with('tabActiva', 'busqueda');
     }
 }

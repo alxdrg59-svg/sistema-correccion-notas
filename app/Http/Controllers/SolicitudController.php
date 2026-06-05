@@ -419,11 +419,21 @@ class SolicitudController extends Controller
         $accionCoordinador  = $aprobaciones->filter(fn($a) => stripos($a->accion, 'coordinador') !== false)->last();
         $accionAdmin        = $aprobaciones->filter(fn($a) => stripos($a->accion, 'admin') !== false)->last();
 
-        // El historial de nota solo existe si la solicitud ya fue finalizada por el admin
         $historialNota = DB::table('historial_notas')
             ->where('solicitud_id', $id)
             ->orderBy('fecha', 'desc')
             ->first();
+
+        $solicitudEvidencia = null;
+        if ($solicitud->estado === 'requiere_evidencia') {
+            $solicitudEvidencia = DB::table('aprobaciones')
+                ->join('usuarios', 'aprobaciones.usuario_id', '=', 'usuarios.id')
+                ->where('aprobaciones.solicitud_id', $id)
+                ->where('aprobaciones.accion', 'Evidencia solicitada por docente')
+                ->orderBy('aprobaciones.fecha', 'desc')
+                ->select('aprobaciones.comentario', 'aprobaciones.fecha', 'usuarios.nombre as actor_nombre')
+                ->first();
+        }
 
         return view('estudiante.detalle_solicitud', compact(
             'solicitud',
@@ -431,7 +441,8 @@ class SolicitudController extends Controller
             'accionDocente',
             'accionCoordinador',
             'accionAdmin',
-            'historialNota'
+            'historialNota',
+            'solicitudEvidencia'
         ));
     }
 
@@ -518,5 +529,59 @@ class SolicitudController extends Controller
         ))->setPaper('letter');
 
         return $pdf->download('Constancia_SCN-' . str_pad($solicitud->id, 6, '0', STR_PAD_LEFT) . '.pdf');
+    }
+
+    public function agregarEvidencia(Request $request, $id)
+    {
+        $solicitud = DB::table('solicitudes_correccion')
+            ->where('id', $id)
+            ->where('estudiante_id', Auth::id())
+            ->where('estado', 'requiere_evidencia')
+            ->first();
+
+        if (!$solicitud) {
+            return redirect('/estudiante/dashboard')
+                ->with('error', 'No se puede agregar evidencia a esta solicitud.');
+        }
+
+        $request->validate([
+            'evidencias'   => 'required|array',
+            'evidencias.*' => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ], [
+            'evidencias.required' => 'Debes adjuntar al menos un archivo de evidencia.',
+            'evidencias.*.mimes'  => 'Solo se permiten archivos JPG, PNG o PDF.',
+            'evidencias.*.max'    => 'Cada archivo no puede superar los 5MB.',
+        ]);
+
+        foreach ($request->file('evidencias') as $index => $archivo) {
+            if ($archivo->isValid()) {
+                $extension = $archivo->getClientOriginalExtension();
+                $nombreArchivo = 'evidencia_estudiante_' . $id . '_' . time() . '_' . $index . '.' . $extension;
+                $rutaArchivo = $archivo->storeAs('evidencias', $nombreArchivo, 'gcs');
+
+                DB::table('evidencias')->insert([
+                    'solicitud_id' => $id,
+                    'usuario_id'   => Auth::id(),
+                    'archivo'      => $rutaArchivo,
+                    'descripcion'  => 'Evidencia adjuntada por estudiante',
+                    'fecha'        => now(),
+                ]);
+            }
+        }
+
+        DB::table('aprobaciones')->insert([
+            'solicitud_id' => $id,
+            'usuario_id'   => Auth::id(),
+            'accion'       => 'Evidencia agregada por estudiante',
+            'comentario'   => null,
+            'fecha'        => now(),
+        ]);
+
+        DB::table('solicitudes_correccion')
+            ->where('id', $id)
+            ->update(['estado' => 'pendiente_docente']);
+
+        return redirect('/estudiante/solicitud/' . $id)
+            ->with('success', '¡Evidencia enviada al docente exitosamente!');
     }
 }

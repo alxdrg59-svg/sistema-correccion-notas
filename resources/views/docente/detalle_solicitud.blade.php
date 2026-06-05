@@ -30,6 +30,7 @@
                         'rechazado_coordinador' => 'bg-red-100    text-red-700    border-red-300',
                         'pendiente_admin'       => 'bg-blue-100   text-blue-700   border-blue-300',
                         'finalizado'            => 'bg-green-100  text-green-700  border-green-300',
+                        'requiere_evidencia'    => 'bg-purple-100 text-purple-700 border-purple-300',
                     ];
                     $etiquetas = [
                         'pendiente_docente'     => 'Pendiente de tu revisión',
@@ -38,6 +39,7 @@
                         'rechazado_coordinador' => 'Rechazada por Coordinador',
                         'pendiente_admin'       => 'En revisión (Admin. Académico)',
                         'finalizado'            => 'Finalizada',
+                        'requiere_evidencia'    => 'Esperando evidencia del estudiante',
                     ];
                     $estadoKey = $solicitud->estado;
                     $estilo    = $clases[$estadoKey]    ?? 'bg-gray-100 text-gray-600 border-gray-300';
@@ -169,7 +171,7 @@
         @endif
 
         {{-- FORMULARIO DE DECISIÓN DEL DOCENTE --}}
-        @if(!$coordinadorYaActuo && in_array($solicitud->estado, ['pendiente_docente', 'pendiente_coordinador', 'rechazado_docente']))
+        @if(!$coordinadorYaActuo && in_array($solicitud->estado, ['pendiente_docente', 'pendiente_coordinador', 'rechazado_docente', 'requiere_evidencia']))
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
             <div class="px-6 py-4" style="background-color: #5D0A28;">
                 <h2 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
@@ -196,6 +198,16 @@
                                         hover:border-green-400 text-gray-600 font-bold uppercase text-sm">
                                 <i class="fas fa-check-circle text-2xl mb-1 block"></i>
                                 Aprobar Solicitud
+                            </div>
+                        </label>
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="decision" value="evidencia" id="radio_evidencia"
+                                class="sr-only peer" {{ old('decision') === 'evidencia' ? 'checked' : '' }}>
+                            <div class="peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500
+                                        border-2 border-gray-300 rounded-xl p-4 text-center transition-all
+                                        hover:border-amber-400 text-gray-600 font-bold uppercase text-sm">
+                                <i class="fas fa-file-upload text-2xl mb-1 block"></i>
+                                Solicitar Evidencia
                             </div>
                         </label>
                         <label class="flex-1 cursor-pointer">
@@ -399,27 +411,27 @@
         if (radios.length && labelObligatorio) {
             radios.forEach(function(radio) {
                 radio.addEventListener('change', function () {
+                    var campo = document.getElementById('campo_comentario');
+                    var campoNota = document.getElementById('campo_nota_admin');
                     if (this.value === 'rechazado') {
                         labelObligatorio.classList.remove('hidden');
-                        document.getElementById('campo_comentario').placeholder =
-                            'Obligatorio: explica por qué rechazas esta solicitud...';
+                        labelObligatorio.textContent = '(Obligatorio al rechazar)';
+                        campo.placeholder = 'Obligatorio: explica por qué rechazas esta solicitud...';
+                        campoNota.style.display = 'none';
+                    } else if (this.value === 'evidencia') {
+                        labelObligatorio.classList.remove('hidden');
+                        labelObligatorio.textContent = '(Obligatorio — indica qué evidencia necesitas)';
+                        campo.placeholder = 'Especifica qué evidencia necesitas del estudiante...';
+                        campoNota.style.display = 'none';
                     } else {
                         labelObligatorio.classList.add('hidden');
-                        document.getElementById('campo_comentario').placeholder =
-                            'Escribe tu comentario o justificación aquí...';
+                        campo.placeholder = 'Escribe tu comentario o justificación aquí...';
+                        campoNota.style.display = 'block';
                     }
                 });
             });
         }
 
-        // Mostrar/ocultar campo nota_admin según decisión
-        document.querySelectorAll('input[name="decision"]').forEach(function(radio) {
-            radio.addEventListener('change', function() {
-                var campo = document.getElementById('campo_nota_admin');
-                campo.style.display = this.value === 'aprobado' ? 'block' : 'none';
-            });
-        });
-        // Si la página se recarga y "Aprobar" está seleccionado, mostrar el campo nota_admin
         document.addEventListener('DOMContentLoaded', function() {
             var radioAprobado = document.getElementById('radio_aprobar');
             if (radioAprobado && radioAprobado.checked) {

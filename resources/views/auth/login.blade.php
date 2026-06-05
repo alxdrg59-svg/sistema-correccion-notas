@@ -19,9 +19,10 @@
         <form action="{{ route('login.post') }}" method="POST" class="space-y-6">
             @csrf
             <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1 uppercase">Correo Institucional</label>
-                <input type="email" name="correo"
-                    placeholder="ejemplo@utec.edu.sv"
+                <label class="block text-sm font-bold text-gray-700 mb-1 uppercase">Carnet o Correo Institucional</label>
+                <input type="text" name="identificador"
+                    placeholder="2720162024 o correo@utec.edu.sv"
+                    value="{{ old('identificador') }}"
                     style="--tw-ring-color: #5D0A28;"
                     class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#5D0A28] transition duration-200"
                     required>

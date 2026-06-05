@@ -74,6 +74,7 @@
                                         'rechazado_coordinador' => 'bg-red-100    text-red-700    border-red-200',
                                         'pendiente_admin'       => 'bg-blue-100   text-blue-700   border-blue-200',
                                         'finalizado'            => 'bg-green-100  text-green-700  border-green-200',
+                                        'requiere_evidencia'    => 'bg-purple-100 text-purple-700 border-purple-200',
                                     ];
                                     $etiquetas = [
                                         'pendiente_docente'     => 'Pendiente',
@@ -82,6 +83,7 @@
                                         'rechazado_coordinador' => 'Rech. Coordinador',
                                         'pendiente_admin'       => 'En Admin. Académico',
                                         'finalizado'            => 'Finalizada',
+                                        'requiere_evidencia'    => 'Esperando evidencia',
                                     ];
                                     $estadoKey = $solicitud->estado;
                                     $estilo    = $clases[$estadoKey]    ?? 'bg-gray-100 text-gray-500 border-gray-200';

@@ -195,9 +195,8 @@ class DocenteController extends Controller
 
         // Armar reglas de validacion segun la decision tomada
         $rules = [
-            'decision'            => 'required|in:aprobado,rechazado',
+            'decision'            => 'required|in:aprobado,rechazado,evidencia',
             'comentario'          => 'nullable|string|max:500',
-            // La nota sugerida solo es obligatoria al aprobar
             'nota_sugerida_admin' => $request->decision === 'aprobado'
                                     ? 'required|string|min:1|max:500'
                                     : 'nullable|string|max:500',
@@ -205,14 +204,17 @@ class DocenteController extends Controller
             'evidencias.*'        => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
         ];
 
-        // Si rechaza, el comentario pasa a ser obligatorio
-        if ($request->decision === 'rechazado') {
+        if ($request->decision === 'rechazado' || $request->decision === 'evidencia') {
             $rules['comentario'] = 'required|string|min:10|max:500';
         }
 
         $request->validate($rules, [
-            'comentario.required' => 'Debes escribir una justificación para rechazar la solicitud.',
-            'comentario.min'      => 'La justificación debe tener al menos 10 caracteres.',
+            'comentario.required' => $request->decision === 'evidencia'
+                ? 'Debes indicar qué evidencia necesitas del estudiante.'
+                : 'Debes escribir una justificación para rechazar la solicitud.',
+            'comentario.min'      => $request->decision === 'evidencia'
+                ? 'La solicitud de evidencia debe tener al menos 10 caracteres.'
+                : 'La justificación debe tener al menos 10 caracteres.',
             'nota_sugerida_admin.required'   => 'Debes indicar la nota sugerida para el administrador académico.',
             'nota_sugerida_admin.min'      => 'La nota sugerida debe tener al menos 1 caracter.',
             'evidencias.*.mimes'  => 'Solo se permiten archivos JPG, PNG o PDF.',
@@ -250,17 +252,17 @@ class DocenteController extends Controller
             }
         }
 
-        // Definir el nuevo estado y el texto de la accion segun la decision
         if ($request->decision === 'aprobado') {
             $nuevoEstado = 'pendiente_coordinador';
             $accionTexto = 'Aprobado por docente';
+        } elseif ($request->decision === 'evidencia') {
+            $nuevoEstado = 'requiere_evidencia';
+            $accionTexto = 'Evidencia solicitada por docente';
         } else {
             $nuevoEstado = 'rechazado_docente';
             $accionTexto = 'Rechazado por docente';
         }
 
-        // Guardar la decision en la tabla de aprobaciones.
-        // La nota sugerida solo se guarda si la decision fue aprobar.
         DB::table('aprobaciones')->insert([
             'solicitud_id'        => $id,
             'usuario_id'          => Auth::id(),
@@ -272,14 +274,15 @@ class DocenteController extends Controller
             'fecha'               => now(),
         ]);
 
-        // Actualizar el estado de la solicitud en la tabla principal
         DB::table('solicitudes_correccion')
             ->where('id', $id)
             ->update(['estado' => $nuevoEstado]);
 
-        $mensaje = $request->decision === 'aprobado'
-            ? 'Solicitud aprobada. Ha sido enviada al coordinador.'
-            : 'Solicitud rechazada correctamente.';
+        $mensaje = match($request->decision) {
+            'aprobado'  => 'Solicitud aprobada. Ha sido enviada al coordinador.',
+            'evidencia' => 'Se ha solicitado más evidencia al estudiante.',
+            default     => 'Solicitud rechazada correctamente.',
+        };
 
         return redirect('/docente/dashboard')->with('success', $mensaje);
     }
