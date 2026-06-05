@@ -30,6 +30,12 @@ class AuthController extends Controller
                 $autenticado = true;
             }
         } else {
+            $user = User::where('correo', $identificador)->first();
+            if ($user && $user->rol === 'estudiante') {
+                return back()->withErrors([
+                    'identificador' => 'Los estudiantes deben iniciar sesión con su número de carnet.',
+                ]);
+            }
             if (Auth::attempt(['correo' => $identificador, 'password' => $password])) {
                 $request->session()->regenerate();
                 $autenticado = true;
