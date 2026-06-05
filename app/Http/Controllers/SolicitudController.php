@@ -55,6 +55,8 @@ class SolicitudController extends Controller
     // =====================================================
     public function crearSolicitud()
     {
+        \App\Http\Controllers\AdminController::autoActualizarAnio();
+
         $fechaHoy = now()->toDateString();
 
         // Buscar un periodo cuyo rango de fechas incluya el dia de hoy.

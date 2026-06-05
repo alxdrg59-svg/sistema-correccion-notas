@@ -258,7 +258,7 @@ class AdminController extends Controller
 
     public function periodos()
     {
-        $this->autoGenerarCiclos();
+        self::autoActualizarAnio();
 
         $periodos = DB::table('periodos_correccion')
             ->join('ciclos_academicos', 'periodos_correccion.ciclo_id', '=', 'ciclos_academicos.id')
@@ -276,7 +276,7 @@ class AdminController extends Controller
         return view('admin.gestionar_periodos', compact('periodos', 'ciclos'));
     }
 
-    private function autoGenerarCiclos()
+    public static function autoActualizarAnio()
     {
         $anioActual = (int) now()->format('Y');
 
@@ -290,6 +290,7 @@ class AdminController extends Controller
             $anioCiclo = (int) $partes[1];
 
             if ($anioCiclo < $anioActual) {
+                $diferencia = $anioActual - $anioCiclo;
                 $fechaInicio = $numero === '01' ? "{$anioActual}-01-01" : "{$anioActual}-07-01";
                 $fechaFin    = $numero === '01' ? "{$anioActual}-06-30" : "{$anioActual}-12-31";
 
@@ -301,6 +302,22 @@ class AdminController extends Controller
                         'fecha_fin'    => $fechaFin,
                         'estado'       => 'inactivo',
                     ]);
+
+                $periodos = DB::table('periodos_correccion')
+                    ->where('ciclo_id', $ciclo->id)
+                    ->get();
+
+                foreach ($periodos as $periodo) {
+                    $nuevaInicio = \Carbon\Carbon::parse($periodo->fecha_inicio)->addYears($diferencia)->toDateString();
+                    $nuevaFin = \Carbon\Carbon::parse($periodo->fecha_fin)->addYears($diferencia)->toDateString();
+
+                    DB::table('periodos_correccion')
+                        ->where('id', $periodo->id)
+                        ->update([
+                            'fecha_inicio' => $nuevaInicio,
+                            'fecha_fin'    => $nuevaFin,
+                        ]);
+                }
             }
         }
     }
