@@ -77,24 +77,56 @@
                 </form>
             </div>
 
+            {{-- Resumen general --}}
+            @if($estadisticas->count())
+            @php
+                $totalSolicitudes = $estadisticas->sum('total');
+                $totalPendientes = $estadisticas->sum('pendientes');
+                $totalFinalizadas = $estadisticas->sum('finalizadas');
+                $totalRechazadas = $estadisticas->sum('rechazadas');
+            @endphp
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-xl shadow p-4 border-l-4" style="border-color: #5D0A28;">
+                    <p class="text-xs font-bold text-gray-400 uppercase">Total Solicitudes</p>
+                    <p class="text-2xl font-extrabold" style="color: #5D0A28;">{{ $totalSolicitudes }}</p>
+                </div>
+                <div class="bg-white rounded-xl shadow p-4 border-l-4 border-blue-500">
+                    <p class="text-xs font-bold text-gray-400 uppercase">Pendientes</p>
+                    <p class="text-2xl font-extrabold text-blue-600">{{ $totalPendientes }}</p>
+                </div>
+                <div class="bg-white rounded-xl shadow p-4 border-l-4 border-green-500">
+                    <p class="text-xs font-bold text-gray-400 uppercase">Finalizadas</p>
+                    <p class="text-2xl font-extrabold text-green-600">{{ $totalFinalizadas }}</p>
+                </div>
+                <div class="bg-white rounded-xl shadow p-4 border-l-4 border-red-500">
+                    <p class="text-xs font-bold text-gray-400 uppercase">Rechazadas</p>
+                    <p class="text-2xl font-extrabold text-red-600">{{ $totalRechazadas }}</p>
+                </div>
+            </div>
+            @endif
+
             {{-- Tabla de estadísticas --}}
             <div class="bg-white rounded-xl shadow-md overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[800px]">
+                <table class="w-full text-left border-collapse min-w-[900px]">
                     <thead style="background-color: #5D0A28;">
                         <tr>
                             <th class="p-4 font-bold text-white text-xs uppercase tracking-wider">Facultad</th>
                             <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Estudiantes</th>
-                            <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Total Solicitudes</th>
+                            <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Total</th>
                             <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Pendientes</th>
                             <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Finalizadas</th>
                             <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Rechazadas</th>
                             <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Excepciones</th>
+                            <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-right">Acción</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($estadisticas as $stat)
-                        <tr class="border-b hover:bg-gray-50 transition">
-                            <td class="p-4 font-bold text-gray-800">{{ $stat->facultad_nombre }}</td>
+                        <tr class="border-b hover:bg-red-50 transition cursor-pointer group"
+                            onclick="window.location='/admin/dashboard?facultad_id={{ $stat->facultad_id }}'">
+                            <td class="p-4">
+                                <p class="font-bold text-gray-800 group-hover:text-[#5D0A28] transition">{{ $stat->facultad_nombre }}</p>
+                            </td>
                             <td class="p-4 text-center">
                                 <span class="text-lg font-bold text-gray-600">{{ $estudiantesPorFacultad[$stat->facultad_id] ?? 0 }}</span>
                             </td>
@@ -113,10 +145,18 @@
                             <td class="p-4 text-center">
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">{{ $stat->excepciones }}</span>
                             </td>
+                            <td class="p-4 text-right">
+                                <a href="/admin/dashboard?facultad_id={{ $stat->facultad_id }}"
+                                    style="background-color: #5D0A28;"
+                                    class="text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition hover:opacity-90 inline-flex items-center gap-1.5"
+                                    onclick="event.stopPropagation()">
+                                    <i class="fas fa-list"></i> Ver Solicitudes
+                                </a>
+                            </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="p-12 text-center">
+                            <td colspan="8" class="p-12 text-center">
                                 <div class="flex flex-col items-center text-gray-400">
                                     <i class="fas fa-chart-bar text-5xl mb-4 text-gray-300"></i>
                                     <p class="font-semibold text-base">No hay datos para mostrar</p>
@@ -128,6 +168,11 @@
                     </tbody>
                 </table>
             </div>
+            @if($estadisticas->count())
+            <p class="text-xs text-gray-400 mt-3 italic text-center">
+                <i class="fas fa-mouse-pointer mr-1"></i> Haz clic en una facultad para ver sus solicitudes
+            </p>
+            @endif
         </div>
 
         {{-- TAB: Buscar Estudiante --}}
