@@ -105,74 +105,146 @@
             </div>
             @endif
 
-            {{-- Tabla de estadísticas --}}
-            <div class="bg-white rounded-xl shadow-md overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[900px]">
-                    <thead style="background-color: #5D0A28;">
-                        <tr>
-                            <th class="p-4 font-bold text-white text-xs uppercase tracking-wider">Facultad</th>
-                            <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Estudiantes</th>
-                            <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Total</th>
-                            <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Pendientes</th>
-                            <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Finalizadas</th>
-                            <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Rechazadas</th>
-                            <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-center">Excepciones</th>
-                            <th class="p-4 font-bold text-white text-xs uppercase tracking-wider text-right">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($estadisticas as $stat)
-                        <tr class="border-b hover:bg-red-50 transition cursor-pointer group"
-                            onclick="window.location='/admin/dashboard?facultad_id={{ $stat->facultad_id }}'">
-                            <td class="p-4">
-                                <p class="font-bold text-gray-800 group-hover:text-[#5D0A28] transition">{{ $stat->facultad_nombre }}</p>
-                            </td>
-                            <td class="p-4 text-center">
-                                <span class="text-lg font-bold text-gray-600">{{ $estudiantesPorFacultad[$stat->facultad_id] ?? 0 }}</span>
-                            </td>
-                            <td class="p-4 text-center">
-                                <span class="text-lg font-extrabold" style="color: #5D0A28;">{{ $stat->total }}</span>
-                            </td>
-                            <td class="p-4 text-center">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">{{ $stat->pendientes }}</span>
-                            </td>
-                            <td class="p-4 text-center">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">{{ $stat->finalizadas }}</span>
-                            </td>
-                            <td class="p-4 text-center">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">{{ $stat->rechazadas }}</span>
-                            </td>
-                            <td class="p-4 text-center">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">{{ $stat->excepciones }}</span>
-                            </td>
-                            <td class="p-4 text-right">
-                                <a href="/admin/dashboard?facultad_id={{ $stat->facultad_id }}"
-                                    style="background-color: #5D0A28;"
-                                    class="text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition hover:opacity-90 inline-flex items-center gap-1.5"
-                                    onclick="event.stopPropagation()">
-                                    <i class="fas fa-list"></i> Ver Solicitudes
-                                </a>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="8" class="p-12 text-center">
-                                <div class="flex flex-col items-center text-gray-400">
-                                    <i class="fas fa-chart-bar text-5xl mb-4 text-gray-300"></i>
-                                    <p class="font-semibold text-base">No hay datos para mostrar</p>
-                                    <p class="text-sm mt-1 italic">Ajusta los filtros o espera a que se registren solicitudes.</p>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            {{-- Tabla de estadísticas con solicitudes expandibles --}}
+            @php
+                $clasesEstado = [
+                    'pendiente_docente'     => 'bg-orange-100 text-orange-700 border-orange-200',
+                    'rechazado_docente'     => 'bg-red-100 text-red-700 border-red-200',
+                    'pendiente_coordinador' => 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                    'rechazado_coordinador' => 'bg-red-100 text-red-700 border-red-200',
+                    'pendiente_admin'       => 'bg-blue-100 text-blue-700 border-blue-200',
+                    'finalizado'            => 'bg-green-100 text-green-700 border-green-200',
+                    'requiere_evidencia'    => 'bg-purple-100 text-purple-700 border-purple-200',
+                ];
+                $etiquetasEstado = [
+                    'pendiente_docente'     => 'Pendiente Docente',
+                    'rechazado_docente'     => 'Rechazada',
+                    'pendiente_coordinador' => 'Pendiente Coordinador',
+                    'rechazado_coordinador' => 'Rechazada',
+                    'pendiente_admin'       => 'Pendiente Admin',
+                    'finalizado'            => 'Finalizada',
+                    'requiere_evidencia'    => 'Esperando evidencia',
+                ];
+            @endphp
+
+            @forelse($estadisticas as $stat)
+            <div class="bg-white rounded-xl shadow-md mb-4 overflow-hidden">
+                {{-- Fila de facultad (clickeable para expandir) --}}
+                <div class="flex flex-wrap items-center gap-4 p-5 cursor-pointer hover:bg-gray-50 transition"
+                     onclick="toggleFacultad({{ $stat->facultad_id }})">
+                    <div class="flex-1 min-w-[200px]">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-chevron-right text-gray-400 transition-transform duration-200" id="icono-fac-{{ $stat->facultad_id }}"></i>
+                            <div>
+                                <p class="font-bold text-gray-800 text-lg">{{ $stat->facultad_nombre }}</p>
+                                <p class="text-xs text-gray-400">{{ $estudiantesPorFacultad[$stat->facultad_id] ?? 0 }} estudiantes registrados</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border" style="background-color: #fdf2f4; color: #5D0A28; border-color: #e8b4bf;">
+                            <i class="fas fa-file-alt"></i> {{ $stat->total }} total
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                            <i class="fas fa-clock"></i> {{ $stat->pendientes }} pendientes
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                            <i class="fas fa-check"></i> {{ $stat->finalizadas }}
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                            <i class="fas fa-times"></i> {{ $stat->rechazadas }}
+                        </span>
+                        @if($stat->excepciones > 0)
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">
+                            <i class="fas fa-exclamation-circle"></i> {{ $stat->excepciones }} exc.
+                        </span>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Solicitudes de esta facultad (ocultas por defecto) --}}
+                <div id="solicitudes-fac-{{ $stat->facultad_id }}" class="hidden border-t">
+                    @php $sols = $solicitudesPorFacultad[$stat->facultad_id] ?? collect(); @endphp
+                    @if($sols->count())
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[800px]">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-5 py-3 font-bold text-gray-500 text-xs uppercase tracking-wider">Estudiante</th>
+                                    <th class="px-5 py-3 font-bold text-gray-500 text-xs uppercase tracking-wider">Materia</th>
+                                    <th class="px-5 py-3 font-bold text-gray-500 text-xs uppercase tracking-wider">Docente</th>
+                                    <th class="px-5 py-3 font-bold text-gray-500 text-xs uppercase tracking-wider text-center">Nota</th>
+                                    <th class="px-5 py-3 font-bold text-gray-500 text-xs uppercase tracking-wider">Evaluación</th>
+                                    <th class="px-5 py-3 font-bold text-gray-500 text-xs uppercase tracking-wider text-center">Estado</th>
+                                    <th class="px-5 py-3 font-bold text-gray-500 text-xs uppercase tracking-wider">Fecha</th>
+                                    <th class="px-5 py-3 font-bold text-gray-500 text-xs uppercase tracking-wider text-right">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($sols as $sol)
+                                <tr class="border-b hover:bg-gray-50 transition">
+                                    <td class="px-5 py-3">
+                                        <p class="font-bold text-gray-800 text-sm">{{ $sol->estudiante_nombre }}</p>
+                                        <p class="text-xs text-gray-400 font-mono">{{ $sol->estudiante_carnet }}</p>
+                                    </td>
+                                    <td class="px-5 py-3">
+                                        <p class="font-bold text-gray-800 text-sm">{{ $sol->materia_nombre }}</p>
+                                    </td>
+                                    <td class="px-5 py-3 text-sm text-gray-700">{{ $sol->docente_nombre }}</td>
+                                    <td class="px-5 py-3 text-center">
+                                        <span class="text-xl font-extrabold" style="color: #5D0A28;">{{ $sol->nota_actual }}</span>
+                                    </td>
+                                    <td class="px-5 py-3">
+                                        <p class="text-xs font-bold text-gray-600 uppercase">{{ $sol->evaluacion }}</p>
+                                        <p class="text-xs text-gray-400">{{ $sol->ciclo }}</p>
+                                        @if($sol->es_excepcion)
+                                            <span class="inline-flex items-center gap-1 mt-1 bg-amber-100 text-amber-700 border border-amber-300 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
+                                                <i class="fas fa-exclamation-circle"></i> Excepción
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="px-5 py-3 text-center">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border {{ $clasesEstado[$sol->estado] ?? 'bg-gray-100 text-gray-500 border-gray-200' }}">
+                                            {{ $etiquetasEstado[$sol->estado] ?? $sol->estado }}
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-3 text-xs text-gray-500 font-medium">
+                                        {{ \Carbon\Carbon::parse($sol->fecha_solicitud)->format('d/m/Y H:i') }}
+                                    </td>
+                                    <td class="px-5 py-3 text-right">
+                                        <a href="/admin/solicitud/{{ $sol->id }}"
+                                            style="background-color: #5D0A28;"
+                                            onmouseover="this.style.backgroundColor='#4A0820'"
+                                            onmouseout="this.style.backgroundColor='#5D0A28'"
+                                            class="text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition inline-flex items-center gap-1.5">
+                                            @if($sol->estado === 'pendiente_admin')
+                                                <i class="fas fa-edit"></i> Aplicar Corrección
+                                            @else
+                                                <i class="fas fa-eye"></i> Ver Detalle
+                                            @endif
+                                        </a>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @else
+                    <div class="p-6 text-center text-gray-400 text-sm italic">
+                        <i class="fas fa-inbox mr-1"></i> No hay solicitudes para esta facultad con los filtros aplicados.
+                    </div>
+                    @endif
+                </div>
             </div>
-            @if($estadisticas->count())
-            <p class="text-xs text-gray-400 mt-3 italic text-center">
-                <i class="fas fa-mouse-pointer mr-1"></i> Haz clic en una facultad para ver sus solicitudes
-            </p>
-            @endif
+            @empty
+            <div class="bg-white rounded-xl shadow-md p-12 text-center">
+                <div class="flex flex-col items-center text-gray-400">
+                    <i class="fas fa-chart-bar text-5xl mb-4 text-gray-300"></i>
+                    <p class="font-semibold text-base">No hay datos para mostrar</p>
+                    <p class="text-sm mt-1 italic">Ajusta los filtros o espera a que se registren solicitudes.</p>
+                </div>
+            </div>
+            @endforelse
         </div>
 
         {{-- TAB: Buscar Estudiante --}}
@@ -330,5 +402,17 @@
         btnActivo.style.borderColor = '#5D0A28';
     }
     mostrarTab('{{ $tabActiva ?? "estadisticas" }}');
+
+    function toggleFacultad(id) {
+        var panel = document.getElementById('solicitudes-fac-' + id);
+        var icono = document.getElementById('icono-fac-' + id);
+        if (panel.classList.contains('hidden')) {
+            panel.classList.remove('hidden');
+            icono.style.transform = 'rotate(90deg)';
+        } else {
+            panel.classList.add('hidden');
+            icono.style.transform = 'rotate(0deg)';
+        }
+    }
 </script>
 @endsection

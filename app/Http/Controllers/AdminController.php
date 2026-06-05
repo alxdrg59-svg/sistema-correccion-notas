@@ -476,11 +476,47 @@ class AdminController extends Controller
             ->groupBy('facultades.id')
             ->pluck('total_estudiantes', 'facultad_id');
 
+        $queryDetalle = DB::table('solicitudes_correccion')
+            ->join('materias', 'solicitudes_correccion.materia_id', '=', 'materias.id')
+            ->join('carreras', 'materias.carrera_id', '=', 'carreras.id')
+            ->join('facultades', 'carreras.facultad_id', '=', 'facultades.id')
+            ->join('usuarios as estudiantes', 'solicitudes_correccion.estudiante_id', '=', 'estudiantes.id')
+            ->join('usuarios as docentes', 'solicitudes_correccion.docente_id', '=', 'docentes.id')
+            ->select(
+                'solicitudes_correccion.id',
+                'solicitudes_correccion.evaluacion',
+                'solicitudes_correccion.ciclo',
+                'solicitudes_correccion.nota_actual',
+                'solicitudes_correccion.estado',
+                'solicitudes_correccion.fecha_solicitud',
+                'solicitudes_correccion.es_excepcion',
+                'facultades.id as facultad_id',
+                'materias.nombre as materia_nombre',
+                'estudiantes.nombre as estudiante_nombre',
+                'estudiantes.carnet as estudiante_carnet',
+                'docentes.nombre as docente_nombre'
+            );
+
+        if ($request->filled('evaluacion')) {
+            $queryDetalle->where('solicitudes_correccion.evaluacion', $request->evaluacion);
+        }
+        if ($request->filled('ciclo')) {
+            $queryDetalle->where('solicitudes_correccion.ciclo', $request->ciclo);
+        }
+        if ($request->filled('anio')) {
+            $queryDetalle->whereYear('solicitudes_correccion.fecha_solicitud', $request->anio);
+        }
+
+        $solicitudesPorFacultad = $queryDetalle
+            ->orderBy('solicitudes_correccion.fecha_solicitud', 'desc')
+            ->get()
+            ->groupBy('facultad_id');
+
         $evaluaciones = DB::table('solicitudes_correccion')->select('evaluacion')->distinct()->orderBy('evaluacion')->pluck('evaluacion');
         $ciclos = DB::table('solicitudes_correccion')->select('ciclo')->distinct()->orderBy('ciclo')->pluck('ciclo');
         $anios = DB::table('solicitudes_correccion')->selectRaw('YEAR(fecha_solicitud) as anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
 
-        return view('admin.estadisticas', compact('estadisticas', 'estudiantesPorFacultad', 'evaluaciones', 'ciclos', 'anios'));
+        return view('admin.estadisticas', compact('estadisticas', 'estudiantesPorFacultad', 'solicitudesPorFacultad', 'evaluaciones', 'ciclos', 'anios'));
     }
 
     public function buscarEstudiante(Request $request)
@@ -533,6 +569,7 @@ class AdminController extends Controller
         return view('admin.estadisticas', compact('estudiante', 'solicitudes', 'busqueda', 'evaluaciones', 'ciclos', 'anios'))
             ->with('estadisticas', collect())
             ->with('estudiantesPorFacultad', collect())
+            ->with('solicitudesPorFacultad', collect())
             ->with('tabActiva', 'busqueda');
     }
 }
