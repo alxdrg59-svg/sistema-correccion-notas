@@ -107,7 +107,7 @@
         </div>
 
         {{-- BOTON DE CANCELAR SOLICITUD --}}
-        @if($solicitud->estado === 'pendiente_docente')
+        @if($solicitud->estado === 'pendiente_docente' && $aprobaciones->isEmpty())
             @php
                 $fechaCreacion = \Carbon\Carbon::parse($solicitud->fecha_solicitud);
                 $fechaLimite = $fechaCreacion->copy()->addHours(3);

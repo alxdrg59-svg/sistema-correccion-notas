@@ -330,6 +330,15 @@ class SolicitudController extends Controller
                 ->with('error', 'No se puede cancelar esta solicitud porque el docente ya la revisó.');
         }
 
+        $docenteYaActuo = DB::table('aprobaciones')
+            ->where('solicitud_id', $id)
+            ->exists();
+
+        if ($docenteYaActuo) {
+            return redirect('/estudiante/solicitud/' . $id)
+                ->with('error', 'No se puede cancelar esta solicitud porque el docente ya la revisó.');
+        }
+
         // Verificar que no hayan pasado mas de 3 horas desde la creacion
         $fechaCreacion = \Carbon\Carbon::parse($solicitud->fecha_solicitud);
         $horasTranscurridas = $fechaCreacion->diffInMinutes(now());
@@ -339,7 +348,9 @@ class SolicitudController extends Controller
                 ->with('error', 'No se puede cancelar esta solicitud porque ya pasaron más de 3 horas desde que fue enviada.');
         }
 
-        // Eliminar evidencias asociadas (archivos en GCS + registros en BD)
+        // Eliminar registros relacionados
+        DB::table('aprobaciones')->where('solicitud_id', $id)->delete();
+
         $evidencias = DB::table('evidencias')
             ->where('solicitud_id', $id)
             ->get();
@@ -349,7 +360,6 @@ class SolicitudController extends Controller
             DB::table('evidencias')->where('id', $evidencia->id)->delete();
         }
 
-        // Eliminar la solicitud
         DB::table('solicitudes_correccion')->where('id', $id)->delete();
 
         return redirect('/estudiante/dashboard')
