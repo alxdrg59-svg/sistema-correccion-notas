@@ -50,66 +50,81 @@
             </div>
         </div>
 
-        {{-- Filtros avanzados (server-side) --}}
-        <div class="bg-white rounded-xl shadow-md p-5 mb-6">
-            <form action="/admin/dashboard" method="GET" class="flex flex-wrap items-end gap-4">
-                <div class="flex-1 min-w-[150px]">
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Facultad</label>
-                    <select name="facultad_id" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
-                        <option value="">Todas</option>
-                        @foreach($facultades as $fac)
-                            <option value="{{ $fac->id }}" {{ request('facultad_id') == $fac->id ? 'selected' : '' }}>{{ $fac->nombre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex-1 min-w-[150px]">
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Evaluación</label>
-                    <select name="evaluacion" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
-                        <option value="">Todas</option>
-                        @foreach($evaluaciones as $eval)
-                            <option value="{{ $eval }}" {{ request('evaluacion') == $eval ? 'selected' : '' }}>{{ $eval }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex-1 min-w-[150px]">
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ciclo</label>
-                    <select name="ciclo" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
-                        <option value="">Todos</option>
-                        @foreach($ciclos as $cic)
-                            <option value="{{ $cic }}" {{ request('ciclo') == $cic ? 'selected' : '' }}>{{ $cic }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex-1 min-w-[120px]">
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Año</label>
-                    <select name="anio" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
-                        <option value="">Todos</option>
-                        @foreach($anios as $a)
-                            <option value="{{ $a }}" {{ request('anio') == $a ? 'selected' : '' }}>{{ $a }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex gap-2">
-                    <button type="submit"
-                        style="background-color: #5D0A28;"
-                        class="text-white px-5 py-2 rounded-lg text-sm font-bold uppercase tracking-wide transition hover:opacity-90">
-                        <i class="fas fa-filter mr-1"></i> Filtrar
-                    </button>
-                    <a href="/admin/dashboard"
-                        class="px-5 py-2 rounded-lg text-sm font-bold uppercase tracking-wide border-2 border-gray-300 text-gray-500 hover:bg-gray-100 transition">
-                        Limpiar
-                    </a>
-                </div>
-            </form>
-        </div>
-
-        {{-- Filtros por estado (client-side) --}}
-        <div class="mb-4 flex flex-wrap gap-2" id="filtros">
+        {{-- Barra de filtros: estado (client-side) + botón filtros avanzados --}}
+        @php
+            $filtrosActivos = request('facultad_id') || request('evaluacion') || request('ciclo') || request('anio');
+            $numFiltros = (request('facultad_id') ? 1 : 0) + (request('evaluacion') ? 1 : 0) + (request('ciclo') ? 1 : 0) + (request('anio') ? 1 : 0);
+        @endphp
+        <div class="mb-4 flex flex-wrap items-center gap-2" id="filtros">
+            <button onclick="toggleFiltrosAvanzados()" id="btn-filtros-avanzados"
+                class="px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition inline-flex items-center gap-1.5 {{ $filtrosActivos ? 'text-white border-[#5D0A28]' : 'border-gray-300 text-gray-500 hover:bg-gray-100' }}"
+                style="{{ $filtrosActivos ? 'background-color: #5D0A28;' : '' }}">
+                <i class="fas fa-sliders-h"></i> Filtros
+                @if($numFiltros > 0)
+                    <span class="bg-white text-[#5D0A28] rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-extrabold">{{ $numFiltros }}</span>
+                @endif
+            </button>
+            <div class="w-px h-6 bg-gray-300 mx-1"></div>
             <button onclick="filtrar('todas')" class="filtro-btn activo px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="todas">Todas</button>
             <button onclick="filtrar('pendiente')" class="filtro-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="pendiente">Pendientes</button>
             <button onclick="filtrar('rechazada')" class="filtro-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="rechazada">Rechazadas</button>
             <button onclick="filtrar('finalizado')" class="filtro-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="finalizado">Finalizadas</button>
             <button onclick="filtrar('excepcion')" class="filtro-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="excepcion">Excepciones</button>
+        </div>
+
+        {{-- Panel de filtros avanzados (colapsable) --}}
+        <div id="panel-filtros-avanzados" class="{{ $filtrosActivos ? '' : 'hidden' }} mb-4">
+            <div class="bg-white rounded-xl shadow-md p-5 border-l-4" style="border-color: #5D0A28;">
+                <form action="/admin/dashboard" method="GET" class="flex flex-wrap items-end gap-4">
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Facultad</label>
+                        <select name="facultad_id" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
+                            <option value="">Todas</option>
+                            @foreach($facultades as $fac)
+                                <option value="{{ $fac->id }}" {{ request('facultad_id') == $fac->id ? 'selected' : '' }}>{{ $fac->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Evaluación</label>
+                        <select name="evaluacion" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
+                            <option value="">Todas</option>
+                            @foreach($evaluaciones as $eval)
+                                <option value="{{ $eval }}" {{ request('evaluacion') == $eval ? 'selected' : '' }}>{{ $eval }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ciclo</label>
+                        <select name="ciclo" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
+                            <option value="">Todos</option>
+                            @foreach($ciclos as $cic)
+                                <option value="{{ $cic }}" {{ request('ciclo') == $cic ? 'selected' : '' }}>{{ $cic }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-[120px]">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Año</label>
+                        <select name="anio" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#5D0A28]">
+                            <option value="">Todos</option>
+                            @foreach($anios as $a)
+                                <option value="{{ $a }}" {{ request('anio') == $a ? 'selected' : '' }}>{{ $a }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit"
+                            style="background-color: #5D0A28;"
+                            class="text-white px-5 py-2 rounded-lg text-sm font-bold uppercase tracking-wide transition hover:opacity-90">
+                            <i class="fas fa-filter mr-1"></i> Aplicar
+                        </button>
+                        <a href="/admin/dashboard"
+                            class="px-5 py-2 rounded-lg text-sm font-bold uppercase tracking-wide border-2 border-gray-300 text-gray-500 hover:bg-gray-100 transition">
+                            Limpiar
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
 
         {{-- TABLA --}}
@@ -271,5 +286,10 @@
             activo.style.borderColor = '#5D0A28';
         }
         filtrar('todas');
+
+        function toggleFiltrosAvanzados() {
+            var panel = document.getElementById('panel-filtros-avanzados');
+            panel.classList.toggle('hidden');
+        }
     </script>
 @endsection
