@@ -15,7 +15,11 @@
                     Todas las solicitudes de corrección de nota del sistema.
                 </p>
             </div>
-            <div class="flex gap-3">
+            <div class="flex flex-wrap gap-3">
+                <a href="/admin/evidencias"
+                    class="bg-gray-700 hover:bg-gray-800 text-white px-5 py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition inline-flex items-center gap-2 shadow-lg">
+                    <i class="fas fa-folder-open"></i> Evidencias
+                </a>
                 <a href="/admin/estadisticas"
                     class="bg-gray-700 hover:bg-gray-800 text-white px-5 py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition inline-flex items-center gap-2 shadow-lg">
                     <i class="fas fa-chart-bar"></i> Estadísticas

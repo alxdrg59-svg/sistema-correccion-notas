@@ -589,4 +589,28 @@ class AdminController extends Controller
             ->with('solicitudesPorFacultad', collect())
             ->with('tabActiva', 'busqueda');
     }
+
+    public function evidencias()
+    {
+        $evidencias = DB::table('evidencias')
+            ->join('usuarios', 'evidencias.usuario_id', '=', 'usuarios.id')
+            ->join('solicitudes_correccion', 'evidencias.solicitud_id', '=', 'solicitudes_correccion.id')
+            ->join('materias', 'solicitudes_correccion.materia_id', '=', 'materias.id')
+            ->select(
+                'evidencias.id',
+                'evidencias.archivo',
+                'evidencias.descripcion',
+                'evidencias.fecha',
+                'evidencias.solicitud_id',
+                'usuarios.nombre as subido_por',
+                'usuarios.rol as rol_usuario',
+                'solicitudes_correccion.evaluacion',
+                'solicitudes_correccion.estado as estado_solicitud',
+                'materias.nombre as materia_nombre'
+            )
+            ->orderBy('evidencias.fecha', 'desc')
+            ->get();
+
+        return view('admin.evidencias', compact('evidencias'));
+    }
 }

@@ -109,6 +109,9 @@ Route::get('/admin/buscar-estudiante', [AdminController::class, 'buscarEstudiant
 Route::post('/admin/ciclos/{id}/actualizar', [AdminController::class, 'actualizarCiclo'])
     ->middleware(['auth', 'rol:admin']);
 
+Route::get('/admin/evidencias', [AdminController::class, 'evidencias'])
+    ->middleware(['auth', 'rol:admin']);
+
 // Rutas para servir evidencias desde Google Cloud Storage
 Route::get('/evidencia/{id}/ver', [EvidenciaController::class, 'ver'])
     ->middleware('auth')->name('evidencia.ver');
