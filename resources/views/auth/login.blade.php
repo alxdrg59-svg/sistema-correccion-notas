@@ -10,6 +10,7 @@
 
     <div class="bg-white p-10 rounded-xl shadow-2xl w-full max-w-md border-t-8" style="border-color: #5D0A28;">
         <div class="text-center mb-8">
+            <img src="{{ asset('images/utec-logo.jpeg') }}" alt="UTEC" class="h-24 mx-auto mb-4">
             <h1 class="text-3xl font-extrabold text-gray-800 uppercase tracking-tight">
                 Universidad <span style="color: #5D0A28;">Tecnológica</span>
             </h1>

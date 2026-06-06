@@ -28,7 +28,7 @@
     <nav style="background-color: #5D0A28;" class="p-4 text-white shadow-xl @yield('nav-class')">
         <div class="container mx-auto flex flex-wrap justify-between items-center gap-2">
             <div class="flex items-center space-x-3">
-                <i class="fas fa-university text-2xl"></i>
+                <img src="{{ asset('images/utec-logo.jpeg') }}" alt="UTEC" class="h-10 rounded">
                 <h1 class="font-bold text-xl uppercase tracking-wider">UTEC <span class="hidden sm:inline">— @yield('subtitle', 'Portal')</span></h1>
             </div>
             <div class="flex items-center space-x-3">

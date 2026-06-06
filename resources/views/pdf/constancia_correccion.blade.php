@@ -236,6 +236,7 @@
         <table>
             <tr>
                 <td>
+                    <img src="{{ public_path('images/utec-logo.jpeg') }}" style="height: 50px; margin-bottom: 4px;"><br>
                     <div class="marca">UTEC</div>
                     <div class="subtitulo">Universidad Tecnológica · Sistema de Corrección de Notas</div>
                 </td>
