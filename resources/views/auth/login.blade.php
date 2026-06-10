@@ -21,7 +21,7 @@
         <form action="{{ route('login.post') }}" method="POST" class="space-y-6">
             @csrf
             <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1 uppercase">Carnet o Correo Institucional</label>
+                <label class="block text-sm font-bold text-gray-700 mb-1 uppercase">Credencial</label>
                 <input type="text" name="identificador"
                     placeholder="Ingrese sus credenciales"
                     value="{{ old('identificador') }}"
