@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Sistema de Notas UTEC</title>
+    <link rel="icon" href="{{ asset('images/utec-logo.jpeg') }}" type="image/jpeg">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body style="background-color: #5D0A28;" class="h-screen flex items-center justify-center">
