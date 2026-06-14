@@ -215,6 +215,35 @@
             letter-spacing: 1px;
         }
 
+        /* Sello de firma digital */
+        .firma-digital {
+            margin-top: 14px;
+            border: 1.5px solid #5D0A28;
+            border-radius: 6px;
+            padding: 8px 14px;
+            display: inline-block;
+            text-align: center;
+        }
+        .firma-digital .fd-titulo {
+            font-size: 7px;
+            color: #5D0A28;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .firma-digital .fd-nombre {
+            font-size: 10px;
+            color: #1f2937;
+            font-weight: bold;
+        }
+        .firma-digital .fd-timestamp {
+            font-size: 8px;
+            color: #6b7280;
+            font-family: DejaVu Sans Mono, monospace;
+            margin-top: 2px;
+        }
+
         /* Aviso al pie del documento */
         .nota-legal {
             margin-top: 25px;
@@ -420,6 +449,11 @@
         <div class="linea"></div>
         <div class="nombre">{{ $decisionAdmin->actor_nombre ?? 'Administración Académica' }}</div>
         <div class="cargo">Administrador Académico — UTEC</div>
+        <div class="firma-digital">
+            <div class="fd-titulo">Firmado digitalmente por</div>
+            <div class="fd-nombre">{{ $decisionAdmin->actor_nombre ?? 'Administración Académica' }}</div>
+            <div class="fd-timestamp">{{ $fechaEmision->format('d/m/Y H:i:s') }} (UTC-6)</div>
+        </div>
     </div>
 
     {{-- Nota legal al pie --}}
