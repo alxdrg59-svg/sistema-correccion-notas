@@ -549,7 +549,12 @@ class AdminController extends Controller
                 ->where('usuarios.rol', 'estudiante')
                 ->where(function ($q) use ($busqueda) {
                     $q->where('usuarios.carnet', 'like', '%' . $busqueda . '%')
-                      ->orWhere('usuarios.nombre', 'like', '%' . $busqueda . '%');
+                      ->orWhere(function ($q2) use ($busqueda) {
+                          $palabras = preg_split('/\s+/', $busqueda);
+                          foreach ($palabras as $palabra) {
+                              $q2->where('usuarios.nombre', 'like', '%' . $palabra . '%');
+                          }
+                      });
                 })
                 ->select(
                     'usuarios.id', 'usuarios.nombre', 'usuarios.carnet', 'usuarios.correo',
