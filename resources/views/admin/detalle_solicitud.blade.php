@@ -274,6 +274,48 @@
         </div>
 
     </div>
+
+    {{-- Modal de confirmación --}}
+    <div id="modal_confirmar" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm" id="modal_overlay"></div>
+        <div class="flex items-center justify-center min-h-screen p-4 relative">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+                <div class="px-6 py-4" style="background-color: #5D0A28;">
+                    <h3 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-yellow-300"></i> Confirmar Corrección
+                    </h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <p class="text-gray-700 text-sm">
+                        Está a punto de aplicar la siguiente nota correcta. <strong>Esta acción es irreversible.</strong>
+                    </p>
+                    <div class="bg-gray-50 border-2 border-gray-200 rounded-xl p-5 text-center">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Nota a registrar</p>
+                        <p id="modal_nota" class="text-5xl font-extrabold" style="color: #5D0A28;"></p>
+                    </div>
+                    <p class="text-gray-500 text-xs text-center">
+                        <i class="fas fa-user-graduate mr-1"></i> {{ $solicitud->estudiante_nombre }} — {{ $solicitud->materia_nombre }}
+                    </p>
+                    <p class="text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs font-semibold text-center">
+                        <i class="fas fa-lock mr-1"></i> Una vez confirmada, nadie podrá modificar esta corrección.
+                    </p>
+                </div>
+                <div class="flex gap-3 px-6 pb-6">
+                    <button type="button" id="btn_confirmar_si"
+                        style="background-color: #5D0A28;"
+                        onmouseover="this.style.backgroundColor='#4A0820'"
+                        onmouseout="this.style.backgroundColor='#5D0A28'"
+                        class="flex-1 text-white py-3 rounded-lg font-bold shadow-lg transition uppercase tracking-widest text-sm">
+                        <i class="fas fa-check-circle mr-2"></i> Sí, Aplicar
+                    </button>
+                    <button type="button" id="btn_confirmar_no"
+                        class="flex-1 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition uppercase tracking-widest text-sm border border-gray-300">
+                        <i class="fas fa-times mr-2"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('scripts')
@@ -352,5 +394,34 @@
                 this.style.borderColor    = '#5D0A28';
             }
         });
+
+        // Modal de confirmación
+        (function() {
+            var form = document.querySelector('form[action*="finalizar"]');
+            if (!form) return;
+
+            var modal = document.getElementById('modal_confirmar');
+            var modalNota = document.getElementById('modal_nota');
+            var btnSi = document.getElementById('btn_confirmar_si');
+            var btnNo = document.getElementById('btn_confirmar_no');
+            var overlay = document.getElementById('modal_overlay');
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var nota = document.getElementById('input_nota_nueva').value;
+                modalNota.textContent = parseFloat(nota).toFixed(2);
+                modal.classList.remove('hidden');
+            });
+
+            btnSi.addEventListener('click', function() {
+                modal.classList.add('hidden');
+                form.removeEventListener('submit', arguments.callee);
+                form.submit();
+            });
+
+            function cerrarModal() { modal.classList.add('hidden'); }
+            btnNo.addEventListener('click', cerrarModal);
+            overlay.addEventListener('click', cerrarModal);
+        })();
     </script>
 @endsection
