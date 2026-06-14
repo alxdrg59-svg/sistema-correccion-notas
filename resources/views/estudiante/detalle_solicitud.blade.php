@@ -174,6 +174,31 @@
                 </div>
                 @endif
 
+                @if($evidenciasDocente->count())
+                <div class="bg-white border border-purple-200 rounded-lg p-4 mb-5">
+                    <p class="text-xs font-bold text-purple-500 uppercase tracking-wider mb-2">
+                        <i class="fas fa-paperclip mr-1"></i> Archivos adjuntos por el Docente ({{ $evidenciasDocente->count() }} archivo{{ $evidenciasDocente->count() > 1 ? 's' : '' }})
+                    </p>
+                    @foreach($evidenciasDocente as $evDoc)
+                    <div class="flex items-center gap-3 {{ !$loop->first ? 'border-t border-purple-100 pt-2 mt-2' : '' }}">
+                        <a href="{{ route('evidencia.ver', $evDoc->id) }}" target="_blank"
+                            style="color: #5D0A28;"
+                            class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
+                            <i class="fas fa-eye"></i> Ver
+                        </a>
+                        <a href="{{ route('evidencia.descargar', $evDoc->id) }}"
+                            style="color: #5D0A28;"
+                            class="text-sm font-bold hover:underline inline-flex items-center gap-1.5">
+                            <i class="fas fa-download"></i> Descargar
+                        </a>
+                        <span class="text-xs text-gray-400">
+                            {{ \Carbon\Carbon::parse($evDoc->fecha)->format('d/m/Y H:i') }}
+                        </span>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+
                 <form action="/estudiante/solicitud/{{ $solicitud->id }}/agregar-evidencia"
                     method="POST"
                     enctype="multipart/form-data"
@@ -272,13 +297,14 @@
                     {{-- Docente --}}
                     @php
                         $docenteActuo   = !is_null($accionDocente);
-                        $docenteAprobó  = $docenteActuo && stripos($accionDocente->accion, 'rechazado') === false;
+                        $docentePidioEvidencia = $docenteActuo && stripos($accionDocente->accion, 'evidencia') !== false;
+                        $docenteAprobó  = $docenteActuo && stripos($accionDocente->accion, 'aprobado') !== false;
                         $docenteRechazó = $docenteActuo && stripos($accionDocente->accion, 'rechazado') !== false;
                     @endphp
                     <div class="relative flex items-start gap-4 mb-8 z-10">
                         <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-md
-                            {{ $docenteRechazó ? 'bg-red-500' : ($docenteAprobó ? 'bg-green-500' : 'bg-orange-400') }}">
-                            <i class="fas {{ $docenteRechazó ? 'fa-times' : ($docenteAprobó ? 'fa-check' : 'fa-hourglass-half') }} text-white text-sm"></i>
+                            {{ $docenteRechazó ? 'bg-red-500' : ($docenteAprobó ? 'bg-green-500' : ($docentePidioEvidencia ? 'bg-purple-500' : 'bg-orange-400')) }}">
+                            <i class="fas {{ $docenteRechazó ? 'fa-times' : ($docenteAprobó ? 'fa-check' : ($docentePidioEvidencia ? 'fa-file-upload' : 'fa-hourglass-half')) }} text-white text-sm"></i>
                         </div>
                         <div class="flex-1 pt-1">
                             <p class="font-bold text-gray-800 text-sm uppercase tracking-wide">Revisión del Docente</p>
@@ -288,7 +314,7 @@
                                     — {{ $accionDocente->actor_nombre }}
                                 </p>
                                 <span class="inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full
-                                    {{ $docenteRechazó ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
+                                    {{ $docenteRechazó ? 'bg-red-100 text-red-700' : ($docentePidioEvidencia ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700') }}">
                                     {{ $accionDocente->accion }}
                                 </span>
                                 @if($accionDocente->comentario)

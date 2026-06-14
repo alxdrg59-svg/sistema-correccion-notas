@@ -435,6 +435,7 @@ class SolicitudController extends Controller
             ->first();
 
         $solicitudEvidencia = null;
+        $evidenciasDocente = collect();
         if ($solicitud->estado === 'requiere_evidencia') {
             $solicitudEvidencia = DB::table('aprobaciones')
                 ->join('usuarios', 'aprobaciones.usuario_id', '=', 'usuarios.id')
@@ -443,6 +444,12 @@ class SolicitudController extends Controller
                 ->orderBy('aprobaciones.fecha', 'desc')
                 ->select('aprobaciones.comentario', 'aprobaciones.fecha', 'usuarios.nombre as actor_nombre')
                 ->first();
+
+            $evidenciasDocente = DB::table('evidencias')
+                ->where('solicitud_id', $id)
+                ->where('descripcion', 'like', '%docente%')
+                ->orderBy('fecha', 'desc')
+                ->get();
         }
 
         return view('estudiante.detalle_solicitud', compact(
@@ -452,7 +459,8 @@ class SolicitudController extends Controller
             'accionCoordinador',
             'accionAdmin',
             'historialNota',
-            'solicitudEvidencia'
+            'solicitudEvidencia',
+            'evidenciasDocente'
         ));
     }
 
