@@ -26,44 +26,54 @@
         @php
             $cicloActivo = $ciclos->firstWhere('estado', 'activo');
         @endphp
-        <div class="bg-white rounded-xl shadow-md mb-8">
+        <div class="bg-white rounded-xl shadow-md overflow-x-auto mb-8">
             <div class="px-6 py-4 flex items-center justify-between" style="background-color: #5D0A28;">
                 <h3 class="text-white font-bold text-base uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-graduation-cap"></i> Ciclo Académico
                 </h3>
             </div>
 
-            <form action="/admin/ciclos/actualizar" method="POST">
-                @csrf
-                <div class="px-6 py-5 flex flex-wrap items-center gap-4">
-                    <div class="flex items-center gap-3">
-                        <label class="font-bold text-gray-600 text-sm uppercase tracking-wider">Ciclo</label>
-                        <select name="ciclo_id"
-                            class="border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm font-bold text-gray-800 focus:border-[#5D0A28] outline-none transition cursor-pointer">
-                            @foreach($ciclos as $ciclo)
-                                <option value="{{ $ciclo->id }}" {{ $ciclo->estado == 'activo' ? 'selected' : '' }}>
-                                    {{ $ciclo->nombre }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase
-                        {{ $cicloActivo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
-                        {{ $cicloActivo ? 'Activo: ' . $cicloActivo->nombre : 'Sin ciclo activo' }}
-                    </span>
-
-                    <div class="ml-auto">
-                        <button type="submit"
-                            style="background-color: #5D0A28;"
-                            onmouseover="this.style.backgroundColor='#4A0820'"
-                            onmouseout="this.style.backgroundColor='#5D0A28'"
-                            class="text-white px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition inline-flex items-center gap-1.5">
-                            <i class="fas fa-save"></i> Guardar
-                        </button>
-                    </div>
-                </div>
-            </form>
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 border-b">
+                    <tr>
+                        <th class="p-3 font-bold text-gray-600 text-xs uppercase tracking-wider">Ciclo</th>
+                        <th class="p-3 font-bold text-gray-600 text-xs uppercase tracking-wider text-center">Estado</th>
+                        <th class="p-3 font-bold text-gray-600 text-xs uppercase tracking-wider text-right">Guardar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="border-b hover:bg-gray-50 transition">
+                        <form action="/admin/ciclos/actualizar" method="POST">
+                            @csrf
+                            <td class="p-3">
+                                <select name="ciclo_id"
+                                    class="border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm font-bold text-gray-800 focus:border-[#5D0A28] outline-none transition cursor-pointer">
+                                    @foreach($ciclos as $ciclo)
+                                        <option value="{{ $ciclo->id }}" {{ $ciclo->estado == 'activo' ? 'selected' : '' }}>
+                                            {{ $ciclo->nombre }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </td>
+                            <td class="p-3 text-center">
+                                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase
+                                    {{ $cicloActivo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
+                                    {{ $cicloActivo ? 'Activo: ' . $cicloActivo->nombre : 'Sin ciclo activo' }}
+                                </span>
+                            </td>
+                            <td class="p-3 text-right">
+                                <button type="submit"
+                                    style="background-color: #5D0A28;"
+                                    onmouseover="this.style.backgroundColor='#4A0820'"
+                                    onmouseout="this.style.backgroundColor='#5D0A28'"
+                                    class="text-white px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide transition inline-flex items-center gap-1.5">
+                                    <i class="fas fa-save"></i> Guardar
+                                </button>
+                            </td>
+                        </form>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         {{-- TABLA DE PERIODOS --}}
