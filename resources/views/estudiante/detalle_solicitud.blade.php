@@ -55,9 +55,13 @@
                     $icono     = $iconos[$estadoKey]    ?? 'fa-circle';
                 @endphp
                 <div class="flex items-center gap-2">
-                    @if($solicitud->es_excepcion)
+                    @if($solicitud->es_excepcion == 1)
                         <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-300 px-3 py-1.5 rounded-full text-xs font-bold uppercase">
                             <i class="fas fa-exclamation-circle"></i> Excepción
+                        </span>
+                    @elseif($solicitud->es_excepcion == 2)
+                        <span class="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 border border-indigo-300 px-3 py-1.5 rounded-full text-xs font-bold uppercase">
+                            <i class="fas fa-clock"></i> Diferido
                         </span>
                     @endif
                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border {{ $estilo }}">
@@ -322,6 +326,13 @@
                                         "{{ $accionDocente->comentario }}"
                                     </p>
                                 @endif
+                                @if($docenteRechazó)
+                                    <div class="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
+                                        <p class="text-xs text-red-700 font-semibold flex items-center gap-1.5">
+                                            <i class="fas fa-info-circle"></i> Acércate a tu docente para mayor detalle.
+                                        </p>
+                                    </div>
+                                @endif
                             @else
                                 <p class="text-xs text-orange-500 font-semibold mt-1">
                                     <i class="fas fa-clock mr-1"></i> Pendiente de revisión por el docente...
@@ -362,6 +373,13 @@
                                         "{{ $accionCoordinador->comentario }}"
                                     </p>
                                 @endif
+                                @if($coordinadorRechazó)
+                                    <div class="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
+                                        <p class="text-xs text-red-700 font-semibold flex items-center gap-1.5">
+                                            <i class="fas fa-info-circle"></i> Acércate a tu docente para mayor detalle.
+                                        </p>
+                                    </div>
+                                @endif
                             @else
                                 <p class="text-xs text-yellow-600 font-semibold mt-1">
                                     <i class="fas fa-clock mr-1"></i> Pendiente de revisión por el coordinador...
@@ -373,12 +391,14 @@
                     {{-- Cierre Administrativo --}}
                     @php
                         $adminActuo     = !is_null($accionAdmin);
+                        $adminRechazó   = $adminActuo && stripos($accionAdmin->accion, 'rechazado') !== false;
+                        $adminAprobó    = $adminActuo && !$adminRechazó;
                         $adminBloqueado = !$coordinadorAprobó;
                     @endphp
                     <div class="relative flex items-start gap-4 z-10">
                         <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-md
-                            {{ $adminBloqueado ? 'bg-gray-300' : ($adminActuo ? 'bg-green-500' : 'bg-blue-400') }}">
-                            <i class="fas {{ $adminBloqueado ? 'fa-lock' : ($adminActuo ? 'fa-flag-checkered' : 'fa-hourglass-half') }} text-white text-sm"></i>
+                            {{ $adminBloqueado ? 'bg-gray-300' : ($adminRechazó ? 'bg-red-500' : ($adminAprobó ? 'bg-green-500' : 'bg-blue-400')) }}">
+                            <i class="fas {{ $adminBloqueado ? 'fa-lock' : ($adminRechazó ? 'fa-times' : ($adminAprobó ? 'fa-flag-checkered' : 'fa-hourglass-half')) }} text-white text-sm"></i>
                         </div>
                         <div class="flex-1 pt-1">
                             <p class="font-bold text-sm uppercase tracking-wide {{ $adminBloqueado ? 'text-gray-400' : 'text-gray-800' }}">
@@ -391,13 +411,21 @@
                                     {{ \Carbon\Carbon::parse($accionAdmin->fecha)->format('d/m/Y H:i') }}
                                     — {{ $accionAdmin->actor_nombre }}
                                 </p>
-                                <span class="inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                                <span class="inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full
+                                    {{ $adminRechazó ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
                                     {{ $accionAdmin->accion }}
                                 </span>
                                 @if($accionAdmin->comentario)
                                     <p class="text-xs text-gray-600 mt-2 bg-gray-50 border rounded p-2 leading-relaxed italic">
                                         "{{ $accionAdmin->comentario }}"
                                     </p>
+                                @endif
+                                @if($adminRechazó)
+                                    <div class="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
+                                        <p class="text-xs text-red-700 font-semibold flex items-center gap-1.5">
+                                            <i class="fas fa-info-circle"></i> Acércate a tu docente para mayor detalle.
+                                        </p>
+                                    </div>
                                 @endif
                             @else
                                 <p class="text-xs text-blue-600 font-semibold mt-1">

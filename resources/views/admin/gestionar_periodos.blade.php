@@ -49,7 +49,13 @@
                             <form action="/admin/ciclos/{{ $ciclo->id }}/actualizar" method="POST">
                                 @csrf
                                 <td class="p-3">
-                                    <p class="font-bold text-gray-800 text-sm">{{ $ciclo->nombre }}</p>
+                                    <select name="nombre"
+                                        class="border-2 border-gray-200 rounded-lg p-2 text-sm font-bold text-gray-800 focus:border-[#5D0A28] outline-none transition cursor-pointer appearance-none bg-white bg-no-repeat bg-[length:12px] bg-[right_10px_center]"
+                                        style="background-image: url('data:image/svg+xml,<%3Fxml version=%221.0%22%3F><svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22><path fill=%22%235D0A28%22 d=%22M7 10l5 5 5-5z%22/></svg>'); padding-right: 30px;">
+                                        <option value="Ciclo 1" {{ $ciclo->nombre == 'Ciclo 1' ? 'selected' : '' }}>Ciclo 1</option>
+                                        <option value="Ciclo 2" {{ $ciclo->nombre == 'Ciclo 2' ? 'selected' : '' }}>Ciclo 2</option>
+                                        <option value="Ciclo 3" {{ $ciclo->nombre == 'Ciclo 3' ? 'selected' : '' }}>Ciclo 3</option>
+                                    </select>
                                 </td>
                                 <td class="p-3">
                                     <input type="date" name="fecha_inicio"
@@ -130,7 +136,14 @@
                                 </td>
 
                                 <td class="p-3">
-                                    <p class="text-sm text-gray-600">{{ $periodo->ciclo_nombre }}</p>
+                                    <select name="ciclo_id"
+                                        class="border-2 border-gray-200 rounded-lg p-2 text-sm focus:border-[#5D0A28] outline-none transition">
+                                        @foreach($ciclos as $ciclo)
+                                            <option value="{{ $ciclo->id }}" {{ $periodo->ciclo_id == $ciclo->id ? 'selected' : '' }}>
+                                                {{ $ciclo->nombre }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </td>
 
                                 <td class="p-3">

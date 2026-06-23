@@ -66,7 +66,7 @@ class AdminController extends Controller
 
         $facultades = DB::table('facultades')->orderBy('nombre')->get();
         $evaluaciones = DB::table('solicitudes_correccion')->select('evaluacion')->distinct()->orderBy('evaluacion')->pluck('evaluacion');
-        $ciclos = DB::table('solicitudes_correccion')->select('ciclo')->distinct()->orderBy('ciclo')->pluck('ciclo');
+        $ciclos = DB::table('ciclos_academicos')->orderBy('id')->pluck('nombre');
         $anios = DB::table('solicitudes_correccion')->selectRaw('YEAR(fecha_solicitud) as anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
 
         return view('admin.dashboard', compact('solicitudes', 'contadores', 'facultades', 'evaluaciones', 'ciclos', 'anios'));
@@ -278,53 +278,13 @@ class AdminController extends Controller
 
     public static function autoActualizarAnio()
     {
-        $anioActual = (int) now()->format('Y');
-
-        $ciclos = DB::table('ciclos_academicos')->get();
-
-        foreach ($ciclos as $ciclo) {
-            $partes = explode('-', $ciclo->nombre);
-            if (count($partes) !== 2) continue;
-
-            $numero = $partes[0];
-            $anioCiclo = (int) $partes[1];
-
-            if ($anioCiclo < $anioActual) {
-                $diferencia = $anioActual - $anioCiclo;
-                $fechaInicio = $numero === '01' ? "{$anioActual}-01-01" : "{$anioActual}-07-01";
-                $fechaFin    = $numero === '01' ? "{$anioActual}-06-30" : "{$anioActual}-12-31";
-
-                DB::table('ciclos_academicos')
-                    ->where('id', $ciclo->id)
-                    ->update([
-                        'nombre'       => "{$numero}-{$anioActual}",
-                        'fecha_inicio' => $fechaInicio,
-                        'fecha_fin'    => $fechaFin,
-                        'estado'       => 'inactivo',
-                    ]);
-
-                $periodos = DB::table('periodos_correccion')
-                    ->where('ciclo_id', $ciclo->id)
-                    ->get();
-
-                foreach ($periodos as $periodo) {
-                    $nuevaInicio = \Carbon\Carbon::parse($periodo->fecha_inicio)->addYears($diferencia)->toDateString();
-                    $nuevaFin = \Carbon\Carbon::parse($periodo->fecha_fin)->addYears($diferencia)->toDateString();
-
-                    DB::table('periodos_correccion')
-                        ->where('id', $periodo->id)
-                        ->update([
-                            'fecha_inicio' => $nuevaInicio,
-                            'fecha_fin'    => $nuevaFin,
-                        ]);
-                }
-            }
-        }
+        // No-op: ciclo names are now "Ciclo 1/2/3" — dates are managed manually by admin.
     }
 
     public function actualizarCiclo(Request $request, $id)
     {
         $request->validate([
+            'nombre'       => 'required|string|in:Ciclo 1,Ciclo 2,Ciclo 3',
             'fecha_inicio' => 'required|date',
             'fecha_fin'    => 'required|date|after_or_equal:fecha_inicio',
         ]);
@@ -332,12 +292,13 @@ class AdminController extends Controller
         DB::table('ciclos_academicos')
             ->where('id', $id)
             ->update([
+                'nombre'       => $request->nombre,
                 'fecha_inicio' => $request->fecha_inicio,
                 'fecha_fin'    => $request->fecha_fin,
             ]);
 
         return redirect('/admin/periodos')
-            ->with('success', 'Fechas del ciclo académico actualizadas correctamente.');
+            ->with('success', 'Ciclo académico actualizado correctamente.');
     }
 
     public function actualizarPeriodo(Request $request, $id)
@@ -345,6 +306,7 @@ class AdminController extends Controller
         $request->validate([
             'fecha_inicio' => 'required|date',
             'fecha_fin'    => 'required|date|after_or_equal:fecha_inicio',
+            'ciclo_id'     => 'required|integer|exists:ciclos_academicos,id',
         ], [
             'fecha_inicio.required'    => 'La fecha de inicio es obligatoria.',
             'fecha_fin.required'       => 'La fecha de fin es obligatoria.',
@@ -357,11 +319,8 @@ class AdminController extends Controller
                 ->with('error', 'El periodo solicitado no existe.');
         }
 
-        // Verificar que las nuevas fechas no se superpongan con otro periodo del mismo ciclo.
-        // Se busca cualquier periodo (que no sea este mismo) cuyo rango de fechas
-        // se cruce con el rango que se quiere guardar.
         $hayTraslape = DB::table('periodos_correccion')
-            ->where('ciclo_id', $periodo->ciclo_id)
+            ->where('ciclo_id', $request->ciclo_id)
             ->where('id', '!=', $id)
             ->where('fecha_inicio', '<=', $request->fecha_fin)
             ->where('fecha_fin', '>=', $request->fecha_inicio)
@@ -380,6 +339,7 @@ class AdminController extends Controller
             ->update([
                 'fecha_inicio' => $request->fecha_inicio,
                 'fecha_fin'    => $request->fecha_fin,
+                'ciclo_id'     => $request->ciclo_id,
             ]);
 
         return redirect('/admin/periodos')
@@ -401,6 +361,7 @@ class AdminController extends Controller
                 'solicitudes_correccion.evaluacion', 'solicitudes_correccion.ciclo',
                 'solicitudes_correccion.nota_actual', 'solicitudes_correccion.motivo',
                 'solicitudes_correccion.estado', 'solicitudes_correccion.fecha_solicitud',
+                'solicitudes_correccion.es_excepcion',
                 'materias.nombre as materia_nombre', 'carreras.nombre as carrera_nombre',
                 'facultades.nombre as facultad_nombre', 'estudiantes.nombre as estudiante_nombre',
                 'estudiantes.carnet as estudiante_carnet', 'docentes.nombre as docente_nombre'
@@ -479,7 +440,8 @@ class AdminController extends Controller
                 DB::raw("SUM(CASE WHEN solicitudes_correccion.estado = 'pendiente_admin' THEN 1 ELSE 0 END) as pendientes"),
                 DB::raw("SUM(CASE WHEN solicitudes_correccion.estado = 'finalizado' THEN 1 ELSE 0 END) as finalizadas"),
                 DB::raw("SUM(CASE WHEN solicitudes_correccion.estado IN ('rechazado_docente', 'rechazado_coordinador') THEN 1 ELSE 0 END) as rechazadas"),
-                DB::raw("SUM(CASE WHEN solicitudes_correccion.es_excepcion = 1 THEN 1 ELSE 0 END) as excepciones")
+                DB::raw("SUM(CASE WHEN solicitudes_correccion.es_excepcion = 1 THEN 1 ELSE 0 END) as excepciones"),
+                DB::raw("SUM(CASE WHEN solicitudes_correccion.es_excepcion = 2 THEN 1 ELSE 0 END) as diferidos")
             )
             ->groupBy('facultades.id', 'facultades.nombre')
             ->orderBy('total', 'desc')
@@ -530,7 +492,7 @@ class AdminController extends Controller
             ->groupBy('facultad_id');
 
         $evaluaciones = DB::table('solicitudes_correccion')->select('evaluacion')->distinct()->orderBy('evaluacion')->pluck('evaluacion');
-        $ciclos = DB::table('solicitudes_correccion')->select('ciclo')->distinct()->orderBy('ciclo')->pluck('ciclo');
+        $ciclos = DB::table('ciclos_academicos')->orderBy('id')->pluck('nombre');
         $anios = DB::table('solicitudes_correccion')->selectRaw('YEAR(fecha_solicitud) as anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
 
         return view('admin.estadisticas', compact('estadisticas', 'estudiantesPorFacultad', 'solicitudesPorFacultad', 'evaluaciones', 'ciclos', 'anios'));
@@ -548,7 +510,9 @@ class AdminController extends Controller
                 ->leftJoin('facultades', 'carreras.facultad_id', '=', 'facultades.id')
                 ->where('usuarios.rol', 'estudiante')
                 ->where(function ($q) use ($busqueda) {
+                    $busquedaSinGuiones = preg_replace('/[^0-9]/', '', $busqueda);
                     $q->where('usuarios.carnet', 'like', '%' . $busqueda . '%')
+                      ->orWhereRaw("REPLACE(usuarios.carnet, '-', '') LIKE ?", ['%' . $busquedaSinGuiones . '%'])
                       ->orWhere(function ($q2) use ($busqueda) {
                           $palabras = preg_split('/\s+/', $busqueda);
                           foreach ($palabras as $palabra) {
@@ -585,7 +549,7 @@ class AdminController extends Controller
         }
 
         $evaluaciones = DB::table('solicitudes_correccion')->select('evaluacion')->distinct()->orderBy('evaluacion')->pluck('evaluacion');
-        $ciclos = DB::table('solicitudes_correccion')->select('ciclo')->distinct()->orderBy('ciclo')->pluck('ciclo');
+        $ciclos = DB::table('ciclos_academicos')->orderBy('id')->pluck('nombre');
         $anios = DB::table('solicitudes_correccion')->selectRaw('YEAR(fecha_solicitud) as anio')->distinct()->orderBy('anio', 'desc')->pluck('anio');
 
         return view('admin.estadisticas', compact('estudiante', 'solicitudes', 'busqueda', 'evaluaciones', 'ciclos', 'anios'))

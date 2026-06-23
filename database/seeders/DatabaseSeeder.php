@@ -45,12 +45,27 @@ class DatabaseSeeder extends Seeder
 
         // Ciclos académicos
         DB::table('ciclos_academicos')->insert([
-            ['id' => 1, 'nombre' => 'Ciclo 01-2026'],
+            ['id' => 1, 'nombre' => 'Ciclo 1', 'fecha_inicio' => '2026-01-01', 'fecha_fin' => '2026-06-30', 'estado' => 'activo'],
+            ['id' => 2, 'nombre' => 'Ciclo 2', 'fecha_inicio' => '2026-07-01', 'fecha_fin' => '2026-12-31', 'estado' => 'inactivo'],
+            ['id' => 3, 'nombre' => 'Ciclo 3', 'fecha_inicio' => null, 'fecha_fin' => null, 'estado' => 'inactivo'],
         ]);
 
-        // Periodo de corrección activo
+        // Periodos de corrección — Ciclo 01
         DB::table('periodos_correccion')->insert([
-            ['id' => 1, 'evaluacion' => 'Parcial 1', 'ciclo_id' => 1, 'fecha_inicio' => '2026-05-01', 'fecha_fin' => '2026-06-30', 'estado' => 1],
+            ['id' => 1,  'evaluacion' => 'Evaluacion 1', 'ciclo_id' => 1, 'fecha_inicio' => '2026-02-09', 'fecha_fin' => '2026-02-20', 'estado' => 1],
+            ['id' => 2,  'evaluacion' => 'Evaluacion 2', 'ciclo_id' => 1, 'fecha_inicio' => '2026-03-16', 'fecha_fin' => '2026-03-27', 'estado' => 1],
+            ['id' => 3,  'evaluacion' => 'Evaluacion 3', 'ciclo_id' => 1, 'fecha_inicio' => '2026-04-13', 'fecha_fin' => '2026-04-24', 'estado' => 1],
+            ['id' => 4,  'evaluacion' => 'Evaluacion 4', 'ciclo_id' => 1, 'fecha_inicio' => '2026-05-11', 'fecha_fin' => '2026-05-22', 'estado' => 1],
+            ['id' => 5,  'evaluacion' => 'Evaluacion 5', 'ciclo_id' => 1, 'fecha_inicio' => '2026-06-08', 'fecha_fin' => '2026-06-19', 'estado' => 1],
+        ]);
+
+        // Periodos de corrección — Ciclo 02
+        DB::table('periodos_correccion')->insert([
+            ['id' => 6,  'evaluacion' => 'Evaluacion 1', 'ciclo_id' => 2, 'fecha_inicio' => '2026-08-10', 'fecha_fin' => '2026-08-21', 'estado' => 1],
+            ['id' => 7,  'evaluacion' => 'Evaluacion 2', 'ciclo_id' => 2, 'fecha_inicio' => '2026-09-14', 'fecha_fin' => '2026-09-25', 'estado' => 1],
+            ['id' => 8,  'evaluacion' => 'Evaluacion 3', 'ciclo_id' => 2, 'fecha_inicio' => '2026-10-12', 'fecha_fin' => '2026-10-23', 'estado' => 1],
+            ['id' => 9,  'evaluacion' => 'Evaluacion 4', 'ciclo_id' => 2, 'fecha_inicio' => '2026-11-09', 'fecha_fin' => '2026-11-20', 'estado' => 1],
+            ['id' => 10, 'evaluacion' => 'Evaluacion 5', 'ciclo_id' => 2, 'fecha_inicio' => '2026-12-07', 'fecha_fin' => '2026-12-18', 'estado' => 1],
         ]);
 
         // Asignaciones docente
