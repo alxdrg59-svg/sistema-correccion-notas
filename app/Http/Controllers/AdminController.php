@@ -293,6 +293,9 @@ class AdminController extends Controller
             ->where('id', $request->ciclo_id)
             ->update(['estado' => 'activo']);
 
+        DB::table('periodos_correccion')
+            ->update(['ciclo_id' => $request->ciclo_id]);
+
         $ciclo = DB::table('ciclos_academicos')->where('id', $request->ciclo_id)->first();
 
         return redirect('/admin/periodos')
