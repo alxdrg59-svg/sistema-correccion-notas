@@ -167,8 +167,10 @@ class SolicitudController extends Controller
     // =====================================================
     public function guardarSolicitud(Request $request)
     {
-        // Detectar si el checkbox de excepcion esta marcado
+        // Detectar tipo de solicitud: normal, excepcion o diferido
         $esExcepcion = $request->has('es_excepcion') && $request->es_excepcion == 1;
+        $esDiferido = $request->has('es_diferido') && $request->es_diferido == 1;
+        $requiereEvidencia = $esExcepcion || $esDiferido;
 
         // Armar las reglas de validacion segun el tipo de solicitud
         $rules = [
@@ -178,14 +180,12 @@ class SolicitudController extends Controller
             'nota_actual' => 'required|numeric|min:0|max:10',
             'periodo_id'  => 'required|integer',
             'motivo'      => 'required|string|min:10',
-            // La evidencia es obligatoria para excepciones, opcional para normales
-            // Se usa evidencias.* para validar cada archivo individualmente
-            'evidencias'   => $esExcepcion ? 'required|array' : 'nullable|array',
+            'evidencias'   => $requiereEvidencia ? 'required|array' : 'nullable|array',
             'evidencias.*' => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
         ];
 
-        // Si es excepcion, tambien validar que se haya seleccionado una evaluacion
-        if ($esExcepcion) {
+        // Si es excepcion o diferido, validar que se haya seleccionado una evaluacion
+        if ($esExcepcion || $esDiferido) {
             $rules['evaluacion_excepcion'] = 'required|string';
         }
 
@@ -197,7 +197,7 @@ class SolicitudController extends Controller
             'nota_actual.numeric' => 'La nota debe ser un número válido.',
             'nota_actual.min'     => 'La nota no puede ser menor a 0.',
             'nota_actual.max'     => 'La nota no puede ser mayor a 10.',
-            'evidencias.required' => 'La evidencia es obligatoria para solicitudes de excepción.',
+            'evidencias.required' => 'La evidencia es obligatoria para solicitudes de excepción y diferido.',
             'evidencias.*.mimes'  => 'Solo se permiten archivos JPG, PNG o PDF.',
             'evidencias.*.max'    => 'Cada archivo no puede superar los 5MB.',
         ]);
@@ -213,42 +213,37 @@ class SolicitudController extends Controller
         }
 
         // Determinar cual evaluacion usar:
-        // Si es excepcion, usar la del dropdown (evaluacion anterior)
+        // Si es excepcion o diferido, usar la del dropdown
         // Si es normal, usar la del periodo activo
-        $evaluacion = $esExcepcion ? $request->evaluacion_excepcion : $periodo->evaluacion;
+        $evaluacion = ($esExcepcion || $esDiferido) ? $request->evaluacion_excepcion : $periodo->evaluacion;
 
-        // Verificar que no exista ya una solicitud activa del mismo tipo.
-        // Se filtra por: mismo estudiante, misma materia, misma evaluacion,
-        // mismo ciclo, mismo tipo (normal o excepcion).
-        // Solo se consideran "activas" las que NO fueron rechazadas.
-        $yaExiste = DB::table('solicitudes_correccion')
-            ->where('estudiante_id', Auth::id())
-            ->where('materia_id', $request->materia_id)
-            ->where('evaluacion', $evaluacion)
-            ->where('ciclo_id', $periodo->ciclo_id)
-            ->where('es_excepcion', $esExcepcion ? 1 : 0)
-            ->whereNotIn('estado', ['rechazado_docente', 'rechazado_coordinador'])
-            ->exists();
-
-        if ($yaExiste) {
-            $tipoTexto = $esExcepcion ? 'excepción' : 'corrección';
-            return redirect('/estudiante/nueva-solicitud')
-                ->with('error', 'Ya tienes una solicitud de ' . $tipoTexto . ' activa para esta materia y evaluación. Puedes enviar una nueva solo si la anterior fue rechazada.');
-        }
-
-        // Buscar el ciclo academico para guardar su nombre en la solicitud
+        // Determinar el ciclo academico activo
         $cicloData = DB::table('ciclos_academicos')
-            ->where('id', $periodo->ciclo_id)
+            ->where('estado', 'activo')
             ->first();
 
         if (!$cicloData) {
             return redirect('/estudiante/nueva-solicitud')
-                ->with('error', 'No se encontró el ciclo académico asociado.');
+                ->with('error', 'No hay un ciclo académico activo. Contacta al administrador.');
         }
 
-        // Insertar la solicitud en la base de datos.
-        // El estado inicial siempre es 'pendiente_docente' porque
-        // el docente es el primero en revisar la solicitud.
+        $valorTipo = $esDiferido ? 2 : ($esExcepcion ? 1 : 0);
+
+        $yaExiste = DB::table('solicitudes_correccion')
+            ->where('estudiante_id', Auth::id())
+            ->where('materia_id', $request->materia_id)
+            ->where('evaluacion', $evaluacion)
+            ->where('ciclo_id', $cicloData->id)
+            ->where('es_excepcion', $valorTipo)
+            ->whereNotIn('estado', ['rechazado_docente', 'rechazado_coordinador'])
+            ->exists();
+
+        if ($yaExiste) {
+            $tipoTexto = $esDiferido ? 'diferido' : ($esExcepcion ? 'excepción' : 'corrección');
+            return redirect('/estudiante/nueva-solicitud')
+                ->with('error', 'Ya tienes una solicitud de ' . $tipoTexto . ' activa para esta materia y evaluación. Puedes enviar una nueva solo si la anterior fue rechazada.');
+        }
+
         try {
             $solicitudId = DB::table('solicitudes_correccion')->insertGetId([
                 'estudiante_id'   => Auth::id(),
@@ -258,10 +253,10 @@ class SolicitudController extends Controller
                 'nota_actual'     => $request->nota_actual,
                 'motivo'          => $request->motivo,
                 'evaluacion'      => $evaluacion,
-                'ciclo_id'        => $periodo->ciclo_id,
+                'ciclo_id'        => $cicloData->id,
                 'ciclo'           => $cicloData->nombre,
                 'estado'          => 'pendiente_docente',
-                'es_excepcion'    => $esExcepcion ? 1 : 0,
+                'es_excepcion'    => $valorTipo,
                 'fecha_solicitud' => now(),
             ]);
         } catch (\Exception $e) {
@@ -290,10 +285,11 @@ class SolicitudController extends Controller
             }
         }
 
-        // Mensaje de exito personalizado segun el tipo de solicitud
-        $mensaje = $esExcepcion
-            ? '¡Tu solicitud de excepción ha sido enviada al docente con éxito!'
-            : '¡Tu solicitud ha sido enviada al docente con éxito!';
+        $mensaje = $esDiferido
+            ? '¡Tu solicitud de diferido ha sido enviada al docente con éxito!'
+            : ($esExcepcion
+                ? '¡Tu solicitud de excepción ha sido enviada al docente con éxito!'
+                : '¡Tu solicitud ha sido enviada al docente con éxito!');
 
         return redirect('/estudiante/dashboard')
             ->with('success', $mensaje);
@@ -493,6 +489,7 @@ class SolicitudController extends Controller
                 'solicitudes_correccion.evaluacion', 'solicitudes_correccion.ciclo',
                 'solicitudes_correccion.nota_actual', 'solicitudes_correccion.motivo',
                 'solicitudes_correccion.estado', 'solicitudes_correccion.fecha_solicitud',
+                'solicitudes_correccion.es_excepcion',
                 'materias.nombre as materia_nombre', 'carreras.nombre as carrera_nombre',
                 'facultades.nombre as facultad_nombre', 'estudiantes.nombre as estudiante_nombre',
                 'estudiantes.carnet as estudiante_carnet', 'docentes.nombre as docente_nombre'
