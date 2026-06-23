@@ -106,7 +106,7 @@ Route::get('/admin/estadisticas', [AdminController::class, 'estadisticas'])
 Route::get('/admin/buscar-estudiante', [AdminController::class, 'buscarEstudiante'])
     ->middleware(['auth', 'rol:admin']);
 
-Route::post('/admin/ciclos/{id}/actualizar', [AdminController::class, 'actualizarCiclo'])
+Route::post('/admin/ciclos/actualizar', [AdminController::class, 'actualizarCiclo'])
     ->middleware(['auth', 'rol:admin']);
 
 Route::get('/admin/evidencias', [AdminController::class, 'evidencias'])

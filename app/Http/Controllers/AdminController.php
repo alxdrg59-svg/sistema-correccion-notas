@@ -281,24 +281,22 @@ class AdminController extends Controller
         // No-op: ciclo names are now "Ciclo 1/2/3" — dates are managed manually by admin.
     }
 
-    public function actualizarCiclo(Request $request, $id)
+    public function actualizarCiclo(Request $request)
     {
         $request->validate([
-            'nombre'       => 'required|string|in:Ciclo 1,Ciclo 2,Ciclo 3',
-            'fecha_inicio' => 'required|date',
-            'fecha_fin'    => 'required|date|after_or_equal:fecha_inicio',
+            'ciclo_id' => 'required|integer|exists:ciclos_academicos,id',
         ]);
 
+        DB::table('ciclos_academicos')->update(['estado' => 'inactivo']);
+
         DB::table('ciclos_academicos')
-            ->where('id', $id)
-            ->update([
-                'nombre'       => $request->nombre,
-                'fecha_inicio' => $request->fecha_inicio,
-                'fecha_fin'    => $request->fecha_fin,
-            ]);
+            ->where('id', $request->ciclo_id)
+            ->update(['estado' => 'activo']);
+
+        $ciclo = DB::table('ciclos_academicos')->where('id', $request->ciclo_id)->first();
 
         return redirect('/admin/periodos')
-            ->with('success', 'Ciclo académico actualizado correctamente.');
+            ->with('success', 'Ciclo académico activo: ' . $ciclo->nombre);
     }
 
     public function actualizarPeriodo(Request $request, $id)
@@ -306,7 +304,6 @@ class AdminController extends Controller
         $request->validate([
             'fecha_inicio' => 'required|date',
             'fecha_fin'    => 'required|date|after_or_equal:fecha_inicio',
-            'ciclo_id'     => 'required|integer|exists:ciclos_academicos,id',
         ], [
             'fecha_inicio.required'    => 'La fecha de inicio es obligatoria.',
             'fecha_fin.required'       => 'La fecha de fin es obligatoria.',
@@ -320,7 +317,7 @@ class AdminController extends Controller
         }
 
         $hayTraslape = DB::table('periodos_correccion')
-            ->where('ciclo_id', $request->ciclo_id)
+            ->where('ciclo_id', $periodo->ciclo_id)
             ->where('id', '!=', $id)
             ->where('fecha_inicio', '<=', $request->fecha_fin)
             ->where('fecha_fin', '>=', $request->fecha_inicio)
@@ -339,7 +336,6 @@ class AdminController extends Controller
             ->update([
                 'fecha_inicio' => $request->fecha_inicio,
                 'fecha_fin'    => $request->fecha_fin,
-                'ciclo_id'     => $request->ciclo_id,
             ]);
 
         return redirect('/admin/periodos')
