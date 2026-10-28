@@ -24,6 +24,7 @@
             <button onclick="filtrar('rechazada')" class="filtro-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="rechazada">Rechazadas</button>
             <button onclick="filtrar('finalizado')" class="filtro-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="finalizado">Finalizadas</button>
             <button onclick="filtrar('excepcion')" class="filtro-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="excepcion">Excepciones</button>
+            <button onclick="filtrar('diferido')" class="filtro-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide border transition" data-filtro="diferido">Diferidos</button>
         </div>
 
         {{-- TABLA DE SOLICITUDES --}}
@@ -46,7 +47,7 @@
                             if (str_contains($solicitud->estado, 'rechazado')) $categoria = 'rechazada';
                             elseif ($solicitud->estado === 'finalizado') $categoria = 'finalizado';
                         @endphp
-                        <tr class="border-b hover:bg-gray-50 transition fila-solicitud" data-estado="{{ $categoria }}" data-excepcion="{{ $solicitud->es_excepcion ? '1' : '0' }}">
+                        <tr class="border-b hover:bg-gray-50 transition fila-solicitud" data-estado="{{ $categoria }}" data-excepcion="{{ $solicitud->es_excepcion }}">
                             <td class="p-4">
                                 <p class="font-bold text-gray-800 text-sm">{{ $solicitud->estudiante_nombre }}</p>
                                 <p class="text-xs text-gray-500 font-mono mt-0.5">{{ $solicitud->estudiante_carnet }}</p>
@@ -56,9 +57,13 @@
                                 <p class="text-xs text-gray-500 uppercase font-semibold mt-0.5">
                                     {{ $solicitud->evaluacion }} &mdash; {{ $solicitud->ciclo }}
                                 </p>
-                                @if($solicitud->es_excepcion)
+                                @if($solicitud->es_excepcion == 1)
                                     <span class="inline-flex items-center gap-1 mt-1 bg-amber-100 text-amber-700 border border-amber-300 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
                                         <i class="fas fa-exclamation-circle"></i> Excepción
+                                    </span>
+                                @elseif($solicitud->es_excepcion == 2)
+                                    <span class="inline-flex items-center gap-1 mt-1 bg-indigo-100 text-indigo-700 border border-indigo-300 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
+                                        <i class="fas fa-clock"></i> Diferido
                                     </span>
                                 @endif
                             </td>
@@ -140,6 +145,8 @@
                     fila.style.display = '';
                 } else if (tipo === 'excepcion') {
                     fila.style.display = fila.getAttribute('data-excepcion') === '1' ? '' : 'none';
+                } else if (tipo === 'diferido') {
+                    fila.style.display = fila.getAttribute('data-excepcion') === '2' ? '' : 'none';
                 } else {
                     fila.style.display = fila.getAttribute('data-estado') === tipo ? '' : 'none';
                 }

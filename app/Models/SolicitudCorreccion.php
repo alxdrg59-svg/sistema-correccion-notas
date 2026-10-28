@@ -22,10 +22,11 @@ use Illuminate\Database\Eloquent\Model;
 //   - finalizado: el admin aplico la correccion
 //
 // Campo 'es_excepcion':
-//   - 0 = solicitud normal (dentro del periodo activo)
+//   - 0 = solicitud ordinaria (dentro del periodo activo)
 //   - 1 = solicitud por excepcion (fuera del periodo o para evaluacion anterior)
+//   - 2 = solicitud para diferido (misma logica que excepcion, evidencia obligatoria)
 //
-// Un estudiante puede tener una solicitud normal Y una de excepcion
+// Un estudiante puede tener una solicitud de cada tipo
 // activas al mismo tiempo para la misma materia.
 // =====================================================
 class SolicitudCorreccion extends Model

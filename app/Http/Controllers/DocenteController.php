@@ -258,6 +258,16 @@ class DocenteController extends Controller
         } elseif ($request->decision === 'evidencia') {
             $nuevoEstado = 'requiere_evidencia';
             $accionTexto = 'Evidencia solicitada por docente';
+
+            $evidenciasEstudiante = DB::table('evidencias')
+                ->where('solicitud_id', $id)
+                ->where('descripcion', 'like', '%estudiante%')
+                ->get();
+
+            foreach ($evidenciasEstudiante as $ev) {
+                Storage::disk('gcs')->delete($ev->archivo);
+                DB::table('evidencias')->where('id', $ev->id)->delete();
+            }
         } else {
             $nuevoEstado = 'rechazado_docente';
             $accionTexto = 'Rechazado por docente';
@@ -307,6 +317,7 @@ class DocenteController extends Controller
                 'solicitudes_correccion.evaluacion', 'solicitudes_correccion.ciclo',
                 'solicitudes_correccion.nota_actual', 'solicitudes_correccion.motivo',
                 'solicitudes_correccion.estado', 'solicitudes_correccion.fecha_solicitud',
+                'solicitudes_correccion.es_excepcion',
                 'materias.nombre as materia_nombre', 'carreras.nombre as carrera_nombre',
                 'facultades.nombre as facultad_nombre', 'estudiantes.nombre as estudiante_nombre',
                 'estudiantes.carnet as estudiante_carnet', 'docentes.nombre as docente_nombre'

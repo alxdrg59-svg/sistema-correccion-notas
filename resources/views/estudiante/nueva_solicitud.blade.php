@@ -141,13 +141,44 @@
                     <div id="contenedor_eval_excepcion" class="{{ $modoExcepcion ? '' : 'hidden' }} mt-4 ml-8">
                         <label class="block text-xs font-bold text-amber-800 uppercase mb-1">Evaluación a Corregir</label>
                         <select name="evaluacion_excepcion" id="select_eval_excepcion"
-                            class="w-full p-3 border-2 border-amber-200 rounded-lg outline-none focus:border-amber-500 transition bg-white text-sm font-bold text-gray-700">
+                            class="w-full p-3 border-2 border-amber-200 rounded-lg outline-none focus:border-amber-500 transition bg-white text-sm font-bold text-gray-700"
+                            {{ $modoExcepcion ? '' : 'disabled' }}>
                             <option value="{{ $evaluacionAnterior ?? '' }}">
                                 {{ str_replace('Evaluacion', 'Evaluación', $evaluacionAnterior ?? '') }}
                             </option>
                         </select>
                         <p class="text-xs text-amber-500 mt-1 italic">
                             La corrección por excepción aplica para la evaluación anterior.
+                        </p>
+                    </div>
+                </div>
+                @endif
+
+                {{-- CHECKBOX DE DIFERIDO --}}
+                @if($evaluacionAnterior || $modoExcepcion)
+                <div class="sm:col-span-2 bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" name="es_diferido" id="check_diferido" value="1"
+                            class="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                            {{ $modoExcepcion ? 'disabled' : '' }}>
+                        <span class="text-sm font-bold text-indigo-800 uppercase tracking-wide">
+                            <i class="fas fa-clock mr-1"></i> Solicitud para Diferido
+                        </span>
+                    </label>
+                    <p class="text-xs text-indigo-600 mt-2 ml-8 italic">
+                        Marque esta casilla si la solicitud es para corrección de nota de un examen diferido. La evidencia es obligatoria.
+                    </p>
+
+                    <div id="contenedor_eval_diferido" class="hidden mt-4 ml-8">
+                        <label class="block text-xs font-bold text-indigo-800 uppercase mb-1">Evaluación a Corregir</label>
+                        <select name="evaluacion_excepcion" id="select_eval_diferido" disabled
+                            class="w-full p-3 border-2 border-indigo-200 rounded-lg outline-none focus:border-indigo-500 transition bg-white text-sm font-bold text-gray-700">
+                            <option value="{{ $evaluacionAnterior ?? '' }}">
+                                {{ str_replace('Evaluacion', 'Evaluación', $evaluacionAnterior ?? '') }}
+                            </option>
+                        </select>
+                        <p class="text-xs text-indigo-500 mt-1 italic">
+                            La corrección para diferido aplica para la evaluación anterior.
                         </p>
                     </div>
                 </div>
@@ -302,34 +333,76 @@
             }
         });
 
-        // 3) LOGICA DEL CHECKBOX DE EXCEPCION
+        // 3) LOGICA DE CHECKBOXES EXCEPCION / DIFERIDO (mutuamente excluyentes)
         var checkExcepcion = document.getElementById('check_excepcion');
+        var checkDiferido = document.getElementById('check_diferido');
+
+        function actualizarEstiloEvidencia(activo) {
+            var zonaEvidencia = document.getElementById('zona_evidencia');
+            var textoObligatorio = document.getElementById('texto_evidencia_obligatoria');
+            var textoOpcional = document.getElementById('texto_evidencia_opcional');
+            var labelEvidencia = document.getElementById('label_evidencia');
+            var iconoEv = document.getElementById('icono_evidencia');
+
+            if (activo) {
+                zonaEvidencia.style.borderColor = '#fca5a5';
+                iconoEv.style.color = '#f87171';
+                textoObligatorio.classList.remove('hidden');
+                textoOpcional.classList.add('hidden');
+                labelEvidencia.style.color = '#dc2626';
+            } else {
+                zonaEvidencia.style.borderColor = '#d1d5db';
+                iconoEv.style.color = '#9ca3af';
+                textoObligatorio.classList.add('hidden');
+                textoOpcional.classList.remove('hidden');
+                labelEvidencia.style.color = '#374151';
+            }
+        }
+
         if (checkExcepcion && !checkExcepcion.disabled) {
             checkExcepcion.addEventListener('change', function () {
                 var contenedorEval = document.getElementById('contenedor_eval_excepcion');
-                var zonaEvidencia = document.getElementById('zona_evidencia');
-                var textoObligatorio = document.getElementById('texto_evidencia_obligatoria');
-                var textoOpcional = document.getElementById('texto_evidencia_opcional');
-                var labelEvidencia = document.getElementById('label_evidencia');
+                var contenedorEvalDif = document.getElementById('contenedor_eval_diferido');
                 var textoBtn = document.getElementById('texto_btn_enviar');
-                var iconoEv = document.getElementById('icono_evidencia');
 
                 if (this.checked) {
+                    if (checkDiferido) checkDiferido.checked = false;
+                    if (contenedorEvalDif) contenedorEvalDif.classList.add('hidden');
+                    var selDif = document.getElementById('select_eval_diferido');
+                    if (selDif) selDif.disabled = true;
                     contenedorEval.classList.remove('hidden');
-                    zonaEvidencia.style.borderColor = '#fca5a5';
-                    iconoEv.style.color = '#f87171';
-                    textoObligatorio.classList.remove('hidden');
-                    textoOpcional.classList.add('hidden');
-                    labelEvidencia.style.color = '#dc2626';
+                    document.getElementById('select_eval_excepcion').disabled = false;
                     textoBtn.textContent = 'Enviar Solicitud de Excepción';
+                    actualizarEstiloEvidencia(true);
                 } else {
                     contenedorEval.classList.add('hidden');
-                    zonaEvidencia.style.borderColor = '#d1d5db';
-                    iconoEv.style.color = '#9ca3af';
-                    textoObligatorio.classList.add('hidden');
-                    textoOpcional.classList.remove('hidden');
-                    labelEvidencia.style.color = '#374151';
+                    document.getElementById('select_eval_excepcion').disabled = true;
                     textoBtn.textContent = 'Enviar Solicitud al Docente';
+                    actualizarEstiloEvidencia(false);
+                }
+            });
+        }
+
+        if (checkDiferido && !checkDiferido.disabled) {
+            checkDiferido.addEventListener('change', function () {
+                var contenedorEvalDif = document.getElementById('contenedor_eval_diferido');
+                var contenedorEval = document.getElementById('contenedor_eval_excepcion');
+                var textoBtn = document.getElementById('texto_btn_enviar');
+
+                if (this.checked) {
+                    if (checkExcepcion && !checkExcepcion.disabled) checkExcepcion.checked = false;
+                    if (contenedorEval) contenedorEval.classList.add('hidden');
+                    var selExc = document.getElementById('select_eval_excepcion');
+                    if (selExc) selExc.disabled = true;
+                    contenedorEvalDif.classList.remove('hidden');
+                    document.getElementById('select_eval_diferido').disabled = false;
+                    textoBtn.textContent = 'Enviar Solicitud de Diferido';
+                    actualizarEstiloEvidencia(true);
+                } else {
+                    contenedorEvalDif.classList.add('hidden');
+                    document.getElementById('select_eval_diferido').disabled = true;
+                    textoBtn.textContent = 'Enviar Solicitud al Docente';
+                    actualizarEstiloEvidencia(false);
                 }
             });
         }
@@ -361,15 +434,15 @@
         zonaEvidencia.addEventListener('dragleave', function (e) {
             e.preventDefault();
             this.style.backgroundColor = '';
-            var esExcepcion = checkExcepcion && checkExcepcion.checked;
-            this.style.borderColor = esExcepcion ? '#fca5a5' : '#d1d5db';
+            var requiereEv = (checkExcepcion && checkExcepcion.checked) || (checkDiferido && checkDiferido.checked);
+            this.style.borderColor = requiereEv ? '#fca5a5' : '#d1d5db';
         });
 
         zonaEvidencia.addEventListener('drop', function (e) {
             e.preventDefault();
             this.style.backgroundColor = '';
-            var esExcepcion = checkExcepcion && checkExcepcion.checked;
-            this.style.borderColor = esExcepcion ? '#fca5a5' : '#d1d5db';
+            var requiereEv = (checkExcepcion && checkExcepcion.checked) || (checkDiferido && checkDiferido.checked);
+            this.style.borderColor = requiereEv ? '#fca5a5' : '#d1d5db';
             if (e.dataTransfer.files.length > 0) {
                 agregarArchivos(e.dataTransfer.files);
             }

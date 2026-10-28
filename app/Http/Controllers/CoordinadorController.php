@@ -35,7 +35,7 @@ class CoordinadorController extends Controller
             ->join('usuarios as docentes', 'solicitudes_correccion.docente_id', '=', 'docentes.id')
             ->where('carreras.facultad_id', $facultad->id)
             // Solo ve las que el docente ya aprobó o las que él mismo ya procesó
-            ->whereNotIn('solicitudes_correccion.estado', ['pendiente_docente', 'rechazado_docente'])
+            ->whereNotIn('solicitudes_correccion.estado', ['pendiente_docente', 'rechazado_docente', 'requiere_evidencia'])
             ->select(
                 'solicitudes_correccion.id',
                 'solicitudes_correccion.evaluacion',
@@ -315,6 +315,7 @@ class CoordinadorController extends Controller
                 'solicitudes_correccion.evaluacion', 'solicitudes_correccion.ciclo',
                 'solicitudes_correccion.nota_actual', 'solicitudes_correccion.motivo',
                 'solicitudes_correccion.estado', 'solicitudes_correccion.fecha_solicitud',
+                'solicitudes_correccion.es_excepcion',
                 'materias.nombre as materia_nombre', 'carreras.nombre as carrera_nombre',
                 'facultades.nombre as facultad_nombre', 'estudiantes.nombre as estudiante_nombre',
                 'estudiantes.carnet as estudiante_carnet', 'docentes.nombre as docente_nombre'

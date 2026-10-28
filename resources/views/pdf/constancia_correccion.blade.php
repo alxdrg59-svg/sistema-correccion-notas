@@ -193,52 +193,59 @@
             color: #374151;
         }
 
-        /* Pie de página: firma del admin */
-        .firma {
-            margin-top: 50px;
-            text-align: center;
+        /* Pie de página: firmas digitales */
+        .firmas-grid {
+            margin-top: 40px;
+            width: 100%;
+            border-collapse: collapse;
         }
-        .firma .linea {
-            width: 60%;
+        .firmas-grid td {
+            width: 50%;
+            padding: 10px 6px;
+            text-align: center;
+            vertical-align: top;
+        }
+        .firma-bloque .linea {
+            width: 85%;
             border-top: 1px solid #1f2937;
             margin: 0 auto;
         }
-        .firma .nombre {
+        .firma-bloque .nombre {
             font-weight: bold;
-            font-size: 11px;
+            font-size: 10px;
             margin-top: 4px;
         }
-        .firma .cargo {
-            font-size: 9px;
+        .firma-bloque .cargo {
+            font-size: 8px;
             color: #555;
             text-transform: uppercase;
             letter-spacing: 1px;
+            margin-bottom: 6px;
         }
 
         /* Sello de firma digital */
         .firma-digital {
-            margin-top: 14px;
             border: 1.5px solid #5D0A28;
             border-radius: 6px;
-            padding: 8px 14px;
+            padding: 6px 10px;
             display: inline-block;
             text-align: center;
         }
         .firma-digital .fd-titulo {
-            font-size: 7px;
+            font-size: 6px;
             color: #5D0A28;
             text-transform: uppercase;
             letter-spacing: 2px;
             font-weight: bold;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         .firma-digital .fd-nombre {
-            font-size: 10px;
+            font-size: 9px;
             color: #1f2937;
             font-weight: bold;
         }
         .firma-digital .fd-timestamp {
-            font-size: 8px;
+            font-size: 7px;
             color: #6b7280;
             font-family: DejaVu Sans Mono, monospace;
             margin-top: 2px;
@@ -321,7 +328,17 @@
             </tr>
             <tr>
                 <td class="label">Evaluación</td>
-                <td class="valor" colspan="3">{{ $solicitud->evaluacion }}</td>
+                <td class="valor">{{ $solicitud->evaluacion }}</td>
+                <td class="label">Tipo</td>
+                <td class="valor">
+                    @if($solicitud->es_excepcion == 1)
+                        Excepción
+                    @elseif($solicitud->es_excepcion == 2)
+                        Diferido
+                    @else
+                        Ordinaria
+                    @endif
+                </td>
             </tr>
         </table>
     </div>
@@ -443,18 +460,72 @@
     </div>
 
     {{-- ══════════════════════════════════════════════ --}}
-    {{-- FIRMA del administrador académico               --}}
+    {{-- FIRMAS DIGITALES de todos los actores           --}}
     {{-- ══════════════════════════════════════════════ --}}
-    <div class="firma">
-        <div class="linea"></div>
-        <div class="nombre">{{ $decisionAdmin->actor_nombre ?? 'Administración Académica' }}</div>
-        <div class="cargo">Administrador Académico — UTEC</div>
-        <div class="firma-digital">
-            <div class="fd-titulo">Firmado digitalmente por</div>
-            <div class="fd-nombre">{{ $decisionAdmin->actor_nombre ?? 'Administración Académica' }}</div>
-            <div class="fd-timestamp">{{ $fechaEmision->format('d/m/Y H:i:s') }} (UTC-6)</div>
-        </div>
-    </div>
+    <table class="firmas-grid">
+        <tr>
+            {{-- Estudiante --}}
+            <td>
+                <div class="firma-bloque">
+                    <div class="linea"></div>
+                    <div class="nombre">{{ $solicitud->estudiante_nombre }}</div>
+                    <div class="cargo">Estudiante</div>
+                    <div class="firma-digital">
+                        <div class="fd-titulo">Firmado digitalmente por</div>
+                        <div class="fd-nombre">{{ $solicitud->estudiante_nombre }}</div>
+                        <div class="fd-timestamp">{{ \Carbon\Carbon::parse($solicitud->fecha_solicitud)->format('d/m/Y H:i:s') }} (UTC-6)</div>
+                    </div>
+                </div>
+            </td>
+            {{-- Docente --}}
+            <td>
+                <div class="firma-bloque">
+                    <div class="linea"></div>
+                    <div class="nombre">{{ $decisionDocente->actor_nombre ?? $solicitud->docente_nombre }}</div>
+                    <div class="cargo">Docente</div>
+                    @if($decisionDocente)
+                    <div class="firma-digital">
+                        <div class="fd-titulo">Firmado digitalmente por</div>
+                        <div class="fd-nombre">{{ $decisionDocente->actor_nombre }}</div>
+                        <div class="fd-timestamp">{{ \Carbon\Carbon::parse($decisionDocente->fecha)->format('d/m/Y H:i:s') }} (UTC-6)</div>
+                    </div>
+                    @endif
+                </div>
+            </td>
+        </tr>
+        <tr>
+            {{-- Coordinador --}}
+            <td>
+                <div class="firma-bloque">
+                    <div class="linea"></div>
+                    <div class="nombre">{{ $decisionCoordinador->actor_nombre ?? 'Coordinador Académico' }}</div>
+                    <div class="cargo">Coordinador Académico</div>
+                    @if($decisionCoordinador)
+                    <div class="firma-digital">
+                        <div class="fd-titulo">Firmado digitalmente por</div>
+                        <div class="fd-nombre">{{ $decisionCoordinador->actor_nombre }}</div>
+                        <div class="fd-timestamp">{{ \Carbon\Carbon::parse($decisionCoordinador->fecha)->format('d/m/Y H:i:s') }} (UTC-6)</div>
+                    </div>
+                    @endif
+                </div>
+            </td>
+            {{-- Administrador Académico --}}
+            <td>
+                <div class="firma-bloque">
+                    <div class="linea"></div>
+                    <div class="nombre">{{ $decisionAdmin->actor_nombre ?? 'Administración Académica' }}</div>
+                    <div class="cargo">Administrador Académico</div>
+                    @if($decisionAdmin)
+                    <div class="firma-digital">
+                        <div class="fd-titulo">Firmado digitalmente por</div>
+                        <div class="fd-nombre">{{ $decisionAdmin->actor_nombre }}</div>
+                        <div class="fd-timestamp">{{ \Carbon\Carbon::parse($decisionAdmin->fecha)->format('d/m/Y H:i:s') }} (UTC-6)</div>
+                    </div>
+                    @endif
+                </div>
+            </td>
+        </tr>
+    </table>
 
     {{-- Nota legal al pie --}}
     <div class="nota-legal">

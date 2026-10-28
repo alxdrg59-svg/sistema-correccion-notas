@@ -159,6 +159,11 @@
                             <i class="fas fa-exclamation-circle"></i> {{ $stat->excepciones }} exc.
                         </span>
                         @endif
+                        @if($stat->diferidos > 0)
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">
+                            <i class="fas fa-clock"></i> {{ $stat->diferidos }} dif.
+                        </span>
+                        @endif
                     </div>
                 </div>
 
@@ -197,9 +202,13 @@
                                     <td class="px-5 py-3">
                                         <p class="text-xs font-bold text-gray-600 uppercase">{{ $sol->evaluacion }}</p>
                                         <p class="text-xs text-gray-400">{{ $sol->ciclo }}</p>
-                                        @if($sol->es_excepcion)
+                                        @if($sol->es_excepcion == 1)
                                             <span class="inline-flex items-center gap-1 mt-1 bg-amber-100 text-amber-700 border border-amber-300 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
                                                 <i class="fas fa-exclamation-circle"></i> Excepción
+                                            </span>
+                                        @elseif($sol->es_excepcion == 2)
+                                            <span class="inline-flex items-center gap-1 mt-1 bg-indigo-100 text-indigo-700 border border-indigo-300 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
+                                                <i class="fas fa-clock"></i> Diferido
                                             </span>
                                         @endif
                                     </td>
@@ -308,9 +317,13 @@
                                 <tr class="border-b hover:bg-gray-50 transition">
                                     <td class="p-4">
                                         <p class="font-bold text-gray-800 text-sm">{{ $sol->materia_nombre }}</p>
-                                        @if($sol->es_excepcion)
+                                        @if($sol->es_excepcion == 1)
                                             <span class="inline-flex items-center gap-1 mt-1 bg-amber-100 text-amber-700 border border-amber-300 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
                                                 <i class="fas fa-exclamation-circle"></i> Excepción
+                                            </span>
+                                        @elseif($sol->es_excepcion == 2)
+                                            <span class="inline-flex items-center gap-1 mt-1 bg-indigo-100 text-indigo-700 border border-indigo-300 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
+                                                <i class="fas fa-clock"></i> Diferido
                                             </span>
                                         @endif
                                     </td>

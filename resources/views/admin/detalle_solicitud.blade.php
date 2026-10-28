@@ -20,9 +20,13 @@
                 <h2 class="text-white font-bold text-lg uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-file-alt"></i> Datos de la Solicitud
                 </h2>
-                @if($solicitud->es_excepcion)
+                @if($solicitud->es_excepcion == 1)
                     <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-300 px-3 py-1.5 rounded-full text-xs font-bold uppercase">
                         <i class="fas fa-exclamation-circle"></i> Excepción
+                    </span>
+                @elseif($solicitud->es_excepcion == 2)
+                    <span class="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 border border-indigo-300 px-3 py-1.5 rounded-full text-xs font-bold uppercase">
+                        <i class="fas fa-clock"></i> Diferido
                     </span>
                 @endif
             </div>

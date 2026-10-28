@@ -46,6 +46,9 @@ return new class extends Migration
         Schema::create('ciclos_academicos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
+            $table->date('fecha_inicio')->nullable();
+            $table->date('fecha_fin')->nullable();
+            $table->string('estado')->default('inactivo');
         });
 
         Schema::create('periodos_correccion', function (Blueprint $table) {
@@ -89,6 +92,7 @@ return new class extends Migration
             $table->decimal('nota_actual', 4, 1);
             $table->text('motivo');
             $table->string('estado')->default('pendiente_docente');
+            $table->tinyInteger('es_excepcion')->default(0);
             $table->timestamp('fecha_solicitud')->useCurrent();
             $table->foreign('estudiante_id')->references('id')->on('usuarios');
             $table->foreign('materia_id')->references('id')->on('materias');
